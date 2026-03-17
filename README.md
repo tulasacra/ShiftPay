@@ -7,7 +7,14 @@ Scan any supported crypto payment QR, open a fixed-rate BCH SideShift request, a
 - `npm install`
 - `npm run dev`
 - `npm run build`
+- `npm run build:pages`
 - `npm test`
+
+## GitHub Pages
+
+- The production bundle is now path-safe and can be hosted from a repository subpath such as `https://<user>.github.io/ShiftPay/`.
+- The included workflow deploys to GitHub Pages on pushes to `main`.
+- In the repository settings, set Pages to use **GitHub Actions** as the source.
 
 ## Notes
 

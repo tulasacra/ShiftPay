@@ -38,7 +38,7 @@ function setStatus(message, tone = 'info') {
 
 function setWalletLinkState(deepLink) {
   if (!deepLink) {
-    walletLink.href = '/';
+    walletLink.href = '#';
     walletLink.classList.add('disabled');
     walletLink.setAttribute('aria-disabled', 'true');
     return;
@@ -231,7 +231,7 @@ async function handleImageInput(event) {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
         setStatus('The app loaded, but offline support could not be enabled.', 'warning');
       });
     });
