@@ -17,6 +17,7 @@ const shiftDetails = document.getElementById('shiftDetails');
 const state = {
   scanner: null,
   isBusy: false,
+  orderWaitTimer: null,
   paymentRequest: null,
   shiftOrder: null,
 };
@@ -123,9 +124,25 @@ function renderShiftDetails(order) {
 }
 
 function resetShiftState() {
+  window.clearTimeout(state.orderWaitTimer);
+  state.orderWaitTimer = null;
   state.shiftOrder = null;
   renderShiftDetails(null);
   setWalletLinkState(null);
+}
+
+function startOrderWatchdog() {
+  window.clearTimeout(state.orderWaitTimer);
+  state.orderWaitTimer = window.setTimeout(() => {
+    if (state.shiftOrder?.depositAddress || !state.paymentRequest) {
+      return;
+    }
+
+    setStatus(
+      'Still waiting for SideShift to create the BCH deposit request. If the widget is blocked, reopen it from a supported region.',
+      'warning',
+    );
+  }, 8000);
 }
 
 async function stopScanner() {
@@ -164,10 +181,8 @@ async function openRequestFromPayment(paymentRequest) {
 
   try {
     await openSideShiftRequest(paymentRequest);
-    setStatus(
-      'Complete the SideShift request. The BCH deposit details will appear here as soon as the order opens.',
-      'success',
-    );
+    startOrderWatchdog();
+    setStatus('Waiting for SideShift to create the BCH deposit request...', 'info');
   } catch (error) {
     setStatus(error.message, 'error');
   }
@@ -251,6 +266,8 @@ function bindUi() {
 
   listenForSideShiftEvents({
     order: (order) => {
+      window.clearTimeout(state.orderWaitTimer);
+      state.orderWaitTimer = null;
       state.shiftOrder = order;
       renderShiftDetails(order);
 

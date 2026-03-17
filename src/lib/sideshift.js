@@ -4,6 +4,28 @@ const SIDESHIFT_EVENTS = ['order', 'deposit', 'settle'];
 
 let widgetPromise;
 
+function waitForWidgetApi(timeoutMs = 15000) {
+  const startedAt = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      if (window.sideshift?.show) {
+        resolve(window.sideshift);
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(new Error('Timed out waiting for the SideShift widget.'));
+        return;
+      }
+
+      window.setTimeout(check, 100);
+    };
+
+    check();
+  });
+}
+
 function themeMode() {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -73,14 +95,7 @@ export async function ensureSideShiftWidget() {
 
   widgetPromise = new Promise((resolve, reject) => {
     const existingScript = document.getElementById(SIDESHIFT_SCRIPT_ID);
-    const finalizeResolve = () => {
-      if (!window.sideshift?.show) {
-        reject(new Error('SideShift loaded without the expected widget API.'));
-        return;
-      }
-
-      resolve(window.sideshift);
-    };
+    const finalizeResolve = () => waitForWidgetApi().then(resolve).catch(reject);
 
     if (existingScript) {
       if (window.sideshift?.show) {
