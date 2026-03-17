@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "build:pages": "vite build && node scripts/sync-legacy-pages.mjs",
+    "build:pages": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run"
   },
