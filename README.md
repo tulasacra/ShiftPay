@@ -12,8 +12,9 @@ Scan any supported crypto payment QR, open a fixed-rate BCH SideShift request, a
 
 ## GitHub Pages
 
-- The production bundle is now path-safe and can be hosted from a repository subpath such as `https://<user>.github.io/ShiftPay/`.
-- The included workflow deploys to GitHub Pages on pushes to `main`.
+- `npm run build:pages` now writes the compiled site to the repository root so GitHub Pages legacy branch deployments can serve this branch directly.
+- The production bundle is path-safe and can be hosted from a repository subpath such as `https://<user>.github.io/ShiftPay/`.
+- The included workflow still supports GitHub Pages via GitHub Actions on pushes to `main`.
 - In the repository settings, set Pages to use **GitHub Actions** as the source.
 
 ## Notes
