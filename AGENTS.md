@@ -4,6 +4,9 @@ BCH (Bitcoin Cash) crypto payment application — "Scan any crypto payment code,
 
 ## Cursor Cloud specific instructions
 
-- As of the initial setup, the repository contains only a `README.md`. No source code, dependencies, build system, tests, or configuration exist yet.
-- Once code is added, update this section with service startup instructions, lint/test/build commands, and any non-obvious caveats.
-- The update script (`echo "No dependencies to install yet"`) is a no-op placeholder. Replace it with the appropriate package install command (e.g., `npm install`, `pip install -r requirements.txt`) once a dependency manifest is added.
+- Install dependencies with `npm install`.
+- Start the local development server with `npm run dev`.
+- Create a production build with `npm run build`.
+- Run the parser/unit tests with `npm test`.
+- The app is a static Vite PWA. It scans supported URI-based payment QRs in the browser and opens the hosted SideShift widget for fixed-rate order creation.
+- SideShift fixed-rate API calls require a secret and are therefore not sent directly from the browser; the client uses the widget and listens for its `order`, `deposit`, and `settle` events.
