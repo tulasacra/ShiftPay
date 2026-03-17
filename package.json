@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:pages": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run"
+    "test": "vitest run --config vitest.config.js"
   },
   "dependencies": {
     "qr-scanner": "^1.4.2",
