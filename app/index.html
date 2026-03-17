@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta
+      name="description"
+      content="Scan a payment QR, open a fixed-rate BCH SideShift request, and launch your BCH wallet with the exact payment details."
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <title>ShiftPay</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="app">
+        <section class="hero">
+          <p class="eyebrow">ShiftPay</p>
+          <h1>Scan a payment QR, pay from BCH.</h1>
+          <p class="lede">
+            Point your camera at a supported crypto payment QR. ShiftPay opens a fixed-rate SideShift
+            request and then gives you a BCH wallet deep link for the exact deposit.
+          </p>
+        </section>
+
+        <section class="scanner-card">
+          <div class="card-header">
+            <div>
+              <h2>QR scanner</h2>
+              <p class="muted">Supported URI schemes: bitcoin, litecoin, dogecoin, dash, zcash.</p>
+            </div>
+            <button id="rescanButton" class="secondary-button" type="button">Scan another code</button>
+          </div>
+
+          <div class="scanner-frame">
+            <video id="scannerVideo" playsinline muted></video>
+            <div id="scannerOverlay" class="scanner-overlay" aria-hidden="true"></div>
+          </div>
+
+          <div class="scanner-actions">
+            <label class="file-button" for="imageInput">Scan from image</label>
+            <input id="imageInput" type="file" accept="image/*" />
+          </div>
+
+          <p id="statusBanner" class="status-banner info" role="status">
+            Waiting for camera permission.
+          </p>
+        </section>
+
+        <section class="details-grid">
+          <article class="info-card">
+            <h2>Target payment request</h2>
+            <dl id="targetDetails" class="detail-list detail-list--placeholder">
+              <div>
+                <dt>Status</dt>
+                <dd>Scan a supported QR code to inspect the target payment.</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="info-card">
+            <h2>SideShift BCH payment</h2>
+            <dl id="shiftDetails" class="detail-list detail-list--placeholder">
+              <div>
+                <dt>Status</dt>
+                <dd>Create a fixed-rate request to see the BCH deposit amount and address.</dd>
+              </div>
+            </dl>
+
+            <div class="button-stack">
+              <a id="walletLink" class="primary-button disabled" href="#" aria-disabled="true">
+                Open BCH wallet
+              </a>
+              <button id="sideshiftButton" class="secondary-button" type="button" disabled>
+                Open SideShift request
+              </button>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="../src/main.js"></script>
+  </body>
+</html>

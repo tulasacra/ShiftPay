@@ -1,0 +1,21 @@
+{
+  "name": "shiftpay",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "build:pages": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run --config vitest.config.js"
+  },
+  "dependencies": {
+    "qr-scanner": "^1.4.2",
+    "vite": "^8.0.0"
+  },
+  "devDependencies": {
+    "qrcode": "^1.5.4",
+    "vitest": "^4.1.0"
+  }
+}
