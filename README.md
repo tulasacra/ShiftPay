@@ -20,7 +20,7 @@ A SideShift account is created when you visit the **[account page](https://sides
 
 - `npm run build:pages` builds the production bundle into `dist/`.
 - The production bundle is path-safe and can be hosted from a repository subpath such as `https://<user>.github.io/ShiftPay/`.
-- The included workflow supports GitHub Pages via GitHub Actions on pushes to `main` and `cursor/*`.
+- The included workflow runs GitHub Actions on pushes to `main` and `cursor/*`; **only `main` deploys** to Pages (so protected `github-pages` environments stay valid). Merge to `main` to publish.
 - In the repository settings, set Pages to use **GitHub Actions** as the source.
 
 ## Notes
