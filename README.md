@@ -20,8 +20,16 @@ A SideShift account is created when you visit the **[account page](https://sides
 
 - `npm run build:pages` builds the production bundle into `dist/`.
 - The production bundle is path-safe and can be hosted from a repository subpath such as `https://<user>.github.io/ShiftPay/`.
-- The included workflow runs GitHub Actions on pushes to `main` and `cursor/*`; **only `main` deploys** to Pages (so protected `github-pages` environments stay valid). Merge to `main` to publish.
-- In the repository settings, set Pages to use **GitHub Actions** as the source.
+- The included workflow deploys on pushes to **`main`** and **`cursor/*`**. In the repository settings, set Pages to use **GitHub Actions** as the source.
+
+### `github-pages` environment (branch allowlist)
+
+If deployment fails with the `github-pages` environment being “not allowed” for a branch, open **Settings → Environments → `github-pages` → Deployment branches and tags** and either:
+
+- choose **All branches**, or  
+- add a pattern that matches your branches (e.g. `main` and `cursor/*`).
+
+Without that, GitHub blocks the deploy job for protected environments. Note: Pages still serves **one** site per repo—the latest successful deploy wins, regardless of branch.
 
 ## Notes
 
