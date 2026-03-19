@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "proxy": "node server/run-proxy.mjs",
     "build": "vite build",
     "build:pages": "vite build",
     "preview": "vite preview --host 0.0.0.0",

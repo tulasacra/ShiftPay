@@ -1,7 +1,7 @@
 import QrScanner from 'qr-scanner';
 
 import { buildBchDeepLink, parsePaymentCode, truncateMiddle } from './lib/payment.js';
-import { listenForSideShiftEvents, openSideShiftRequest } from './lib/sideshift.js';
+import { createFixedBchShift, fetchShiftStatus } from './lib/sideshift.js';
 import './styles.css';
 
 const statusBanner = document.getElementById('statusBanner');
@@ -14,10 +14,14 @@ const walletLink = document.getElementById('walletLink');
 const targetDetails = document.getElementById('targetDetails');
 const shiftDetails = document.getElementById('shiftDetails');
 
+const SHIFT_POLL_MS = 4000;
+
 const state = {
   scanner: null,
   isBusy: false,
   orderWaitTimer: null,
+  shiftPollTimer: null,
+  shiftPollLastStatus: null,
   paymentRequest: null,
   shiftOrder: null,
 };
@@ -120,15 +124,68 @@ function renderShiftDetails(order) {
         truncateMiddle(order.id || order.orderId || 'Pending'),
       )}</dd>
     </div>
+    ${
+      order.depositMemo
+        ? `<div>
+      <dt>BCH memo</dt>
+      <dd title="${escapeHtml(order.depositMemo)}">${escapeHtml(truncateMiddle(order.depositMemo))}</dd>
+    </div>`
+        : ''
+    }
   `;
 }
 
 function resetShiftState() {
   window.clearTimeout(state.orderWaitTimer);
   state.orderWaitTimer = null;
+  stopShiftStatusPoll();
+  state.shiftPollLastStatus = null;
   state.shiftOrder = null;
   renderShiftDetails(null);
   setWalletLinkState(null);
+}
+
+function stopShiftStatusPoll() {
+  if (state.shiftPollTimer !== null) {
+    window.clearTimeout(state.shiftPollTimer);
+    state.shiftPollTimer = null;
+  }
+}
+
+function startShiftStatusPoll(shiftId) {
+  stopShiftStatusPoll();
+
+  const schedule = (delay) => {
+    state.shiftPollTimer = window.setTimeout(tick, delay);
+  };
+
+  const tick = async () => {
+    state.shiftPollTimer = null;
+
+    try {
+      const shift = await fetchShiftStatus(shiftId);
+      const prev = state.shiftPollLastStatus;
+      state.shiftPollLastStatus = shift.status;
+      state.shiftOrder = shift;
+      renderShiftDetails(shift);
+
+      const st = shift.status;
+      if (prev === 'waiting' && st && st !== 'waiting' && st !== 'settled') {
+        setStatus('SideShift detected the BCH deposit. Waiting for settlement.', 'success');
+      }
+
+      if (st === 'settled') {
+        setStatus('SideShift marked the shift as settled.', 'success');
+        return;
+      }
+
+      schedule(SHIFT_POLL_MS);
+    } catch {
+      schedule(SHIFT_POLL_MS * 2);
+    }
+  };
+
+  schedule(0);
 }
 
 function startOrderWatchdog() {
@@ -139,7 +196,7 @@ function startOrderWatchdog() {
     }
 
     setStatus(
-      'Still waiting for SideShift to create the BCH deposit request. If the widget is blocked, reopen it from a supported region.',
+      'Still waiting for the SideShift API to return BCH deposit details. Check your network and proxy configuration.',
       'warning',
     );
   }, 8000);
@@ -177,13 +234,33 @@ async function openRequestFromPayment(paymentRequest) {
   renderTargetDetails(paymentRequest);
   resetShiftState();
   sideshiftButton.disabled = false;
-  setStatus('Opening a fixed-rate SideShift request...', 'info');
+  setStatus('Creating a fixed-rate SideShift request...', 'info');
 
   try {
-    await openSideShiftRequest(paymentRequest);
     startOrderWatchdog();
-    setStatus('Waiting for SideShift to create the BCH deposit request...', 'info');
+    const order = await createFixedBchShift(paymentRequest);
+    window.clearTimeout(state.orderWaitTimer);
+    state.orderWaitTimer = null;
+    state.shiftOrder = order;
+    renderShiftDetails(order);
+
+    if (!order.depositAddress || !order.depositAmount) {
+      setStatus('SideShift did not return BCH deposit details.', 'warning');
+      return;
+    }
+
+    setWalletLinkState(
+      buildBchDeepLink(order.depositAddress, order.depositAmount, order.depositMemo),
+    );
+    setStatus('Fixed-rate request created. Launch your BCH wallet with the prepared payment.', 'success');
+
+    if (order.id) {
+      state.shiftPollLastStatus = order.status ?? null;
+      startShiftStatusPoll(order.id);
+    }
   } catch (error) {
+    window.clearTimeout(state.orderWaitTimer);
+    state.orderWaitTimer = null;
     setStatus(error.message, 'error');
   }
 }
@@ -264,28 +341,6 @@ function bindUi() {
     }
   });
 
-  listenForSideShiftEvents({
-    order: (order) => {
-      window.clearTimeout(state.orderWaitTimer);
-      state.orderWaitTimer = null;
-      state.shiftOrder = order;
-      renderShiftDetails(order);
-
-      if (!order.depositAddress || !order.depositAmount) {
-        setStatus('SideShift opened, but it did not expose BCH deposit details yet.', 'warning');
-        return;
-      }
-
-      setWalletLinkState(buildBchDeepLink(order.depositAddress, order.depositAmount));
-      setStatus('Fixed-rate request opened. Launch your BCH wallet with the prepared payment.', 'success');
-    },
-    deposit: () => {
-      setStatus('SideShift detected the BCH deposit. Waiting for settlement.', 'success');
-    },
-    settle: () => {
-      setStatus('SideShift marked the shift as settled.', 'success');
-    },
-  });
 }
 
 renderTargetDetails(null);
