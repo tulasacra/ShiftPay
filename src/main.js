@@ -1,6 +1,12 @@
 import QrScanner from 'qr-scanner';
 
 import { buildBchDeepLink, parsePaymentCode, truncateMiddle } from './lib/payment.js';
+import {
+  clearStoredCredentials,
+  getStoredCredentials,
+  hasStoredCredentials,
+  saveCredentials,
+} from './lib/sideshiftCredentials.js';
 import { createFixedBchShift, fetchShiftStatus } from './lib/sideshift.js';
 import './styles.css';
 
@@ -13,6 +19,11 @@ const sideshiftButton = document.getElementById('sideshiftButton');
 const walletLink = document.getElementById('walletLink');
 const targetDetails = document.getElementById('targetDetails');
 const shiftDetails = document.getElementById('shiftDetails');
+const sideshiftCredsForm = document.getElementById('sideshiftCredsForm');
+const affiliateIdInput = document.getElementById('affiliateIdInput');
+const secretInput = document.getElementById('secretInput');
+const clearCredsButton = document.getElementById('clearCredsButton');
+const credsStatus = document.getElementById('credsStatus');
 
 const SHIFT_POLL_MS = 4000;
 
@@ -38,6 +49,19 @@ function escapeHtml(value) {
 function setStatus(message, tone = 'info') {
   statusBanner.textContent = message;
   statusBanner.className = `status-banner ${tone}`;
+}
+
+function renderCredsStatus() {
+  if (!credsStatus) {
+    return;
+  }
+  credsStatus.textContent = hasStoredCredentials()
+    ? 'Keys saved in this browser only. Clear them if you share this device.'
+    : 'No keys saved yet.';
+}
+
+function syncShiftButton() {
+  sideshiftButton.disabled = !state.paymentRequest || !hasStoredCredentials();
 }
 
 function setWalletLinkState(deepLink) {
@@ -163,7 +187,13 @@ function startShiftStatusPoll(shiftId) {
     state.shiftPollTimer = null;
 
     try {
-      const shift = await fetchShiftStatus(shiftId);
+      const creds = getStoredCredentials();
+      if (!creds) {
+        schedule(SHIFT_POLL_MS * 2);
+        return;
+      }
+
+      const shift = await fetchShiftStatus(shiftId, creds);
       const prev = state.shiftPollLastStatus;
       state.shiftPollLastStatus = shift.status;
       state.shiftOrder = shift;
@@ -196,7 +226,7 @@ function startOrderWatchdog() {
     }
 
     setStatus(
-      'Still waiting for the SideShift API to return BCH deposit details. Check your network and proxy configuration.',
+      'Still waiting for the SideShift API to return BCH deposit details. Check your network and API keys.',
       'warning',
     );
   }, 8000);
@@ -229,16 +259,24 @@ async function startScanner() {
   }
 }
 
-async function openRequestFromPayment(paymentRequest) {
-  state.paymentRequest = paymentRequest;
-  renderTargetDetails(paymentRequest);
+async function createShiftFromPayment() {
+  const paymentRequest = state.paymentRequest;
+  if (!paymentRequest) {
+    return;
+  }
+
+  const creds = getStoredCredentials();
+  if (!creds) {
+    setStatus('Add your SideShift API keys first.', 'warning');
+    return;
+  }
+
   resetShiftState();
-  sideshiftButton.disabled = false;
   setStatus('Creating a fixed-rate SideShift request...', 'info');
 
   try {
     startOrderWatchdog();
-    const order = await createFixedBchShift(paymentRequest);
+    const order = await createFixedBchShift(paymentRequest, creds);
     window.clearTimeout(state.orderWaitTimer);
     state.orderWaitTimer = null;
     state.shiftOrder = order;
@@ -263,6 +301,20 @@ async function openRequestFromPayment(paymentRequest) {
     state.orderWaitTimer = null;
     setStatus(error.message, 'error');
   }
+}
+
+async function openRequestFromPayment(paymentRequest) {
+  state.paymentRequest = paymentRequest;
+  renderTargetDetails(paymentRequest);
+  resetShiftState();
+  syncShiftButton();
+
+  if (!hasStoredCredentials()) {
+    setStatus('Add your SideShift API keys below, then tap Create SideShift request.', 'warning');
+    return;
+  }
+
+  await createShiftFromPayment();
 }
 
 async function handleDecodedText(decodedText) {
@@ -322,17 +374,39 @@ function bindUi() {
     state.paymentRequest = null;
     renderTargetDetails(null);
     resetShiftState();
-    sideshiftButton.disabled = true;
+    syncShiftButton();
     setStatus('Ready to scan again.', 'info');
     await startScanner();
   });
 
+  sideshiftCredsForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    try {
+      saveCredentials(secretInput.value, affiliateIdInput.value);
+      secretInput.value = '';
+      renderCredsStatus();
+      syncShiftButton();
+      setStatus('SideShift keys saved for this browser.', 'success');
+    } catch (error) {
+      setStatus(error.message, 'error');
+    }
+  });
+
+  clearCredsButton.addEventListener('click', () => {
+    clearStoredCredentials();
+    affiliateIdInput.value = '';
+    secretInput.value = '';
+    renderCredsStatus();
+    syncShiftButton();
+    setStatus('SideShift keys cleared from this browser.', 'info');
+  });
+
   sideshiftButton.addEventListener('click', async () => {
-    if (!state.paymentRequest) {
+    if (!state.paymentRequest || !hasStoredCredentials()) {
       return;
     }
 
-    await openRequestFromPayment(state.paymentRequest);
+    await createShiftFromPayment();
   });
 
   walletLink.addEventListener('click', (event) => {
@@ -346,6 +420,12 @@ function bindUi() {
 renderTargetDetails(null);
 renderShiftDetails(null);
 setWalletLinkState(null);
+renderCredsStatus();
+const existingCreds = getStoredCredentials();
+if (existingCreds && affiliateIdInput) {
+  affiliateIdInput.value = existingCreds.affiliateId;
+}
+syncShiftButton();
 bindUi();
 registerServiceWorker();
 setStatus('Requesting camera access...', 'info');

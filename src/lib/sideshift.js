@@ -1,12 +1,4 @@
-export function sideshiftApiBase() {
-  const custom = import.meta.env.VITE_SIDESHIFT_API_BASE;
-  if (custom) {
-    return String(custom).replace(/\/$/, '');
-  }
-  const base = import.meta.env.BASE_URL || '/';
-  const normalized = base.endsWith('/') ? base : `${base}/`;
-  return `${normalized}api/sideshift`;
-}
+const SIDESHIFT_API_V2 = 'https://sideshift.ai/api/v2';
 
 function parseJsonResponse(text) {
   try {
@@ -32,33 +24,85 @@ function httpErrorMessage(data, fallback) {
   return fallback;
 }
 
-export async function createFixedBchShift(paymentRequest, options = {}) {
-  const base = sideshiftApiBase();
-  const res = await fetch(`${base}/fixed-shift`, {
+function authHeaders(secret) {
+  return {
+    'Content-Type': 'application/json',
+    'x-sideshift-secret': secret,
+  };
+}
+
+/**
+ * @param {{ secret: string; affiliateId: string }} credentials
+ */
+export async function createFixedBchShift(paymentRequest, credentials, options = {}) {
+  if (!credentials?.secret || !credentials?.affiliateId) {
+    throw new Error(
+      'Add your SideShift private key and account ID from https://sideshift.ai/account (keys stay in this browser only).',
+    );
+  }
+
+  const quoteRes = await fetch(`${SIDESHIFT_API_V2}/quotes`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(credentials.secret),
     body: JSON.stringify({
+      depositCoin: 'bch',
       settleCoin: paymentRequest.methodId,
       settleAmount: paymentRequest.amount,
-      settleAddress: paymentRequest.address,
+      affiliateId: credentials.affiliateId,
     }),
     signal: options.signal,
   });
 
-  const text = await res.text();
-  const data = parseJsonResponse(text);
+  const quoteText = await quoteRes.text();
+  const quoteData = parseJsonResponse(quoteText);
 
-  if (!res.ok) {
-    const msg = httpErrorMessage(data, text || `HTTP ${res.status}`);
+  if (!quoteRes.ok) {
+    const msg = httpErrorMessage(quoteData, quoteText || `HTTP ${quoteRes.status}`);
     throw new Error(msg);
   }
 
-  return normalizeShift(data);
+  const quoteId = quoteData?.id;
+  if (!quoteId) {
+    throw new Error('SideShift quote response did not include an id.');
+  }
+
+  const shiftBody = {
+    quoteId,
+    settleAddress: paymentRequest.address,
+    affiliateId: credentials.affiliateId,
+  };
+
+  const shiftRes = await fetch(`${SIDESHIFT_API_V2}/shifts/fixed`, {
+    method: 'POST',
+    headers: authHeaders(credentials.secret),
+    body: JSON.stringify(shiftBody),
+    signal: options.signal,
+  });
+
+  const shiftText = await shiftRes.text();
+  const shiftData = parseJsonResponse(shiftText);
+
+  if (!shiftRes.ok) {
+    const msg = httpErrorMessage(shiftData, shiftText || `HTTP ${shiftRes.status}`);
+    throw new Error(msg);
+  }
+
+  return normalizeShift(shiftData);
 }
 
-export async function fetchShiftStatus(shiftId, options = {}) {
-  const base = sideshiftApiBase();
-  const res = await fetch(`${base}/shifts/${encodeURIComponent(shiftId)}`, {
+/**
+ * @param {{ secret: string; affiliateId: string }} credentials
+ */
+export async function fetchShiftStatus(shiftId, credentials, options = {}) {
+  if (!credentials?.secret) {
+    throw new Error('SideShift private key is missing.');
+  }
+
+  const res = await fetch(`${SIDESHIFT_API_V2}/shifts/${encodeURIComponent(shiftId)}`, {
+    method: 'GET',
+    headers: {
+      'x-sideshift-secret': credentials.secret,
+    },
     signal: options.signal,
   });
 

@@ -9,5 +9,5 @@ BCH (Bitcoin Cash) crypto payment application — "Scan any crypto payment code,
 - Create a production build with `npm run build`.
 - Create the GitHub Pages bundle with `npm run build:pages`.
 - Run the parser/unit tests with `npm test`.
-- The app is a static Vite PWA. It scans supported URI-based payment QRs in the browser and creates fixed-rate BCH→* shifts via the SideShift REST API ([docs](https://docs.sideshift.ai/)) through a server-side proxy (`server/sideshiftProxy.mjs`, wired in Vite dev or `npm run proxy`). The client never sees `SIDESHIFT_SECRET`; optional `VITE_SIDESHIFT_API_BASE` points production builds at a deployed proxy. Shift lifecycle updates use polling on `GET /v2/shifts/:id` through the same proxy.
+- The app is a static Vite PWA. It scans supported URI-based payment QRs in the browser and creates fixed-rate BCH→* shifts via the SideShift REST API ([docs](https://docs.sideshift.ai/)) using **per-user** credentials: visiting [sideshift.ai/account](https://sideshift.ai/account) provisions an account; users paste **private key** + **account ID** into the app; values persist in `localStorage` only. No backend or shared API secret. Shift status uses polling on `GET /v2/shifts/:id` with the same user key.
 - The production build uses relative asset paths so the generated `dist/` bundle can be served from a GitHub Pages repository subpath.

@@ -5,13 +5,16 @@ Scan any supported crypto payment QR, open a fixed-rate BCH SideShift request, a
 ## Development
 
 - `npm install`
-- Copy `.env.example` to `.env` and set `SIDESHIFT_SECRET` and `SIDESHIFT_AFFILIATE_ID` from your [SideShift account](https://sideshift.ai/api) (see [REST docs](https://docs.sideshift.ai/)).
-- `npm run dev` — Vite serves the app and a same-origin proxy at `/api/sideshift` that calls SideShift with your secret (see `server/sideshiftProxy.mjs`).
+- `npm run dev`
 - `npm run build`
 - `npm run build:pages`
 - `npm test`
 
-Alternatively, run `npm run proxy` in another terminal (with the same env vars) if you want the proxy on `http://127.0.0.1:8787/api/sideshift` without using Vite’s middleware.
+## SideShift API keys (each user)
+
+The app stays **fully static / serverless**. It calls the [SideShift REST API](https://docs.sideshift.ai/) directly from the browser (SideShift enables CORS for `x-sideshift-secret`).
+
+A SideShift account is created when you visit the **[account page](https://sideshift.ai/account)**. Each user copies their **private key** (`x-sideshift-secret`) and **account ID** (affiliate id) into ShiftPay. Keys are stored only in **that user’s browser** (`localStorage` on the device).
 
 ## GitHub Pages
 
@@ -22,5 +25,5 @@ Alternatively, run `npm run proxy` in another terminal (with the same env vars) 
 
 ## Notes
 
-- The web UI is static; authenticated SideShift calls go through a small proxy you run (Vite dev middleware, `npm run proxy`, or your own deployment) so `SIDESHIFT_SECRET` never ships to the browser. For GitHub Pages or any static host, set `VITE_SIDESHIFT_API_BASE` at build time to your deployed proxy’s URL (see `.env.example`).
+- Treat stored keys like cash: anyone with access to this device or browser profile can use them. Users should **clear keys** on shared machines.
 - Supported payment QR schemes in this build: `bitcoin:`, `litecoin:`, `dogecoin:`, `dash:`, and `zcash:`.
