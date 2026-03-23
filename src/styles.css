@@ -132,6 +132,18 @@ h1 {
   transform: translateY(-1px);
 }
 
+.help-dialog-copy {
+  display: grid;
+  gap: 1rem;
+}
+
+.help-dialog-lead {
+  margin: 0;
+  line-height: 1.55;
+  color: #cbd5e1;
+  font-size: 1.05rem;
+}
+
 .help-dialog-body {
   margin: 0;
   line-height: 1.6;
