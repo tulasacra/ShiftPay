@@ -415,14 +415,4 @@ h1 {
   .card-header {
     flex-direction: column;
   }
-
-  .hero-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .hero-header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
 }
