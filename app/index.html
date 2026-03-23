@@ -19,9 +19,60 @@
           <p class="eyebrow">ShiftPay</p>
           <h1>Scan a payment QR, pay from BCH.</h1>
           <p class="lede">
-            Point your camera at a supported crypto payment QR. ShiftPay opens a fixed-rate SideShift
-            request and then gives you a BCH wallet deep link for the exact deposit.
+            Point your camera at a supported crypto payment QR. ShiftPay creates a fixed-rate SideShift
+            shift via the API and then gives you a BCH wallet deep link for the exact deposit. Each user
+            brings their own SideShift API keys (stored only in this browser).
           </p>
+        </section>
+
+        <section class="creds-section">
+          <article class="info-card">
+            <h2>Your SideShift API keys</h2>
+            <p class="muted creds-lede">
+              A SideShift account is created when you visit the
+              <a href="https://sideshift.ai/account" target="_blank" rel="noopener noreferrer">account page</a>.
+              Copy your <strong>private key</strong> and <strong>account ID</strong> (affiliate id) here. They
+              never leave your device except when calling SideShift.
+            </p>
+            <form id="sideshiftCredsForm" class="credential-form">
+              <label class="field">
+                <span>Account ID</span>
+                <input
+                  id="affiliateIdInput"
+                  class="text-input"
+                  type="text"
+                  name="affiliateId"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="From the account page"
+                />
+              </label>
+              <label class="field">
+                <span>Private key</span>
+                <input
+                  id="secretInput"
+                  class="text-input"
+                  type="password"
+                  name="secret"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Your API private key"
+                />
+              </label>
+              <div class="button-stack">
+                <button id="saveCredsButton" class="primary-button" type="submit">Save keys</button>
+                <button id="clearCredsButton" class="secondary-button" type="button">Clear keys</button>
+                <a
+                  class="secondary-button"
+                  href="https://sideshift.ai/account"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Open account page</a
+                >
+              </div>
+            </form>
+            <p id="credsStatus" class="creds-status muted" role="status"></p>
+          </article>
         </section>
 
         <section class="scanner-card">
@@ -73,7 +124,7 @@
                 Open BCH wallet
               </a>
               <button id="sideshiftButton" class="secondary-button" type="button" disabled>
-                Open SideShift request
+                Create SideShift request
               </button>
             </div>
           </article>

@@ -33,4 +33,10 @@ describe('buildBchDeepLink', () => {
       'bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a?amount=0.1234',
     );
   });
+
+  it('adds a memo parameter when provided', () => {
+    expect(
+      buildBchDeepLink('bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a', '0.1', 'hello'),
+    ).toBe('bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a?amount=0.1&message=hello');
+  });
 });

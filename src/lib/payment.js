@@ -118,7 +118,7 @@ export function parsePaymentCode(rawValue) {
   };
 }
 
-export function buildBchDeepLink(address, amount) {
+export function buildBchDeepLink(address, amount, memo) {
   if (!address || !amount) {
     throw new Error('A BCH address and amount are required to build the wallet link.');
   }
@@ -126,6 +126,9 @@ export function buildBchDeepLink(address, amount) {
   const normalizedAddress = address.replace(/^bitcoincash:/i, '');
   const params = new URLSearchParams();
   params.set('amount', amount);
+  if (memo) {
+    params.set('message', memo);
+  }
 
   return `bitcoincash:${normalizedAddress}?${params.toString()}`;
 }

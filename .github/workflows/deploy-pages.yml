@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -35,6 +35,7 @@ jobs:
       - name: Build site
         run: npm run build
 
+      # Requires the github-pages environment to allow this branch (see README).
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
