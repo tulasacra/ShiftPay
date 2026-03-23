@@ -119,20 +119,14 @@
           </article>
         </dialog>
 
-        <section class="scanner-card">
-          <div class="card-header">
-            <div>
-              <h2>QR scanner</h2>
-            </div>
-            <button id="rescanButton" class="secondary-button" type="button">Scan another code</button>
-          </div>
-
+        <section class="scanner-card" aria-label="QR code scanner">
           <div class="scanner-frame">
             <video id="scannerVideo" playsinline muted></video>
             <div id="scannerOverlay" class="scanner-overlay" aria-hidden="true"></div>
           </div>
 
           <div class="scanner-actions">
+            <button id="rescanButton" class="secondary-button" type="button">Scan another code</button>
             <label class="file-button" for="imageInput">Scan from image</label>
             <input id="imageInput" type="file" accept="image/*" />
           </div>
