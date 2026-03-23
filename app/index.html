@@ -16,18 +16,62 @@
     <div class="app-shell">
       <main class="app">
         <section class="hero">
-          <p class="eyebrow">ShiftPay</p>
-          <h1>Scan a payment QR, pay from BCH.</h1>
-          <p class="lede">
-            Point your camera at a supported crypto payment QR. ShiftPay creates a fixed-rate SideShift
-            shift via the API and then gives you a BCH wallet deep link for the exact deposit. Each user
-            brings their own SideShift API keys (stored only in this browser).
-          </p>
+          <div class="hero-header">
+            <div class="hero-heading">
+              <h1 class="eyebrow">ShiftPay</h1>
+            </div>
+            <div class="hero-header-actions">
+              <button
+                type="button"
+                id="helpButton"
+                class="icon-help-button"
+                aria-label="About ShiftPay"
+                aria-haspopup="dialog"
+                aria-controls="helpDialog"
+              >
+                ?
+              </button>
+              <button
+                type="button"
+                id="settingsButton"
+                class="secondary-button"
+                aria-haspopup="dialog"
+                aria-controls="settingsDialog"
+              >
+                Settings
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section class="creds-section">
-          <article class="info-card">
-            <h2>Your SideShift API keys</h2>
+        <dialog id="helpDialog" class="settings-dialog" aria-labelledby="helpDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="helpDialogTitle">About ShiftPay</h2>
+              <button type="button" id="closeHelpButton" class="secondary-button">Done</button>
+            </div>
+            <div class="help-dialog-copy">
+              <p class="help-dialog-lead">
+                Scan a crypto payment QR, pay from a BCH wallet.
+              </p>
+              <p class="muted help-dialog-body">
+                Supported URI schemes: bitcoin, litecoin, dogecoin, dash, zcash.
+              </p>
+              <p class="muted help-dialog-body">
+                ShiftPay creates a fixed-rate SideShift shift via the API and then gives you a BCH wallet deep
+                link for the exact deposit. Each user brings their own SideShift API keys (stored only in this
+                browser).
+              </p>
+            </div>
+          </article>
+        </dialog>
+
+        <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="settingsDialogTitle">SideShift API keys</h2>
+              <button type="button" id="closeSettingsButton" class="secondary-button">Done</button>
+            </div>
             <p class="muted creds-lede">
               A SideShift account is created when you visit the
               <a href="https://sideshift.ai/account" target="_blank" rel="noopener noreferrer">account page</a>.
@@ -73,23 +117,16 @@
             </form>
             <p id="credsStatus" class="creds-status muted" role="status"></p>
           </article>
-        </section>
+        </dialog>
 
-        <section class="scanner-card">
-          <div class="card-header">
-            <div>
-              <h2>QR scanner</h2>
-              <p class="muted">Supported URI schemes: bitcoin, litecoin, dogecoin, dash, zcash.</p>
-            </div>
-            <button id="rescanButton" class="secondary-button" type="button">Scan another code</button>
-          </div>
-
+        <section class="scanner-card" aria-label="QR code scanner">
           <div class="scanner-frame">
             <video id="scannerVideo" playsinline muted></video>
             <div id="scannerOverlay" class="scanner-overlay" aria-hidden="true"></div>
           </div>
 
           <div class="scanner-actions">
+            <button id="rescanButton" class="secondary-button" type="button">Scan another code</button>
             <label class="file-button" for="imageInput">Scan from image</label>
             <input id="imageInput" type="file" accept="image/*" />
           </div>

@@ -24,6 +24,12 @@ const affiliateIdInput = document.getElementById('affiliateIdInput');
 const secretInput = document.getElementById('secretInput');
 const clearCredsButton = document.getElementById('clearCredsButton');
 const credsStatus = document.getElementById('credsStatus');
+const settingsButton = document.getElementById('settingsButton');
+const settingsDialog = document.getElementById('settingsDialog');
+const closeSettingsButton = document.getElementById('closeSettingsButton');
+const helpButton = document.getElementById('helpButton');
+const helpDialog = document.getElementById('helpDialog');
+const closeHelpButton = document.getElementById('closeHelpButton');
 
 const SHIFT_POLL_MS = 4000;
 
@@ -35,6 +41,7 @@ const state = {
   shiftPollLastStatus: null,
   paymentRequest: null,
   shiftOrder: null,
+  shouldResumeScannerAfterModal: false,
 };
 
 function escapeHtml(value) {
@@ -236,6 +243,50 @@ async function stopScanner() {
   state.scanner?.stop();
 }
 
+function isScannerVideoLive() {
+  const stream = video?.srcObject;
+  return stream instanceof MediaStream && stream.getTracks().some((t) => t.readyState === 'live');
+}
+
+async function pauseScannerForModal() {
+  await state.scanner?.pause();
+}
+
+async function resumeScannerAfterModalIfNeeded() {
+  if (!state.shouldResumeScannerAfterModal) {
+    return;
+  }
+  state.shouldResumeScannerAfterModal = false;
+  try {
+    await state.scanner?.start();
+  } catch {
+    // Camera may still be unavailable; keep existing status text.
+  }
+}
+
+function bindModalWithScannerPause(dialog) {
+  if (!dialog) {
+    return;
+  }
+  dialog.addEventListener('close', () => {
+    void resumeScannerAfterModalIfNeeded();
+  });
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
+}
+
+async function openModalWithScannerPause(dialog) {
+  if (!dialog) {
+    return;
+  }
+  state.shouldResumeScannerAfterModal = isScannerVideoLive();
+  await pauseScannerForModal();
+  dialog.showModal();
+}
+
 async function startScanner() {
   if (!state.scanner) {
     state.scanner = new QrScanner(
@@ -267,7 +318,7 @@ async function createShiftFromPayment() {
 
   const creds = getStoredCredentials();
   if (!creds) {
-    setStatus('Add your SideShift API keys first.', 'warning');
+    setStatus('Add your SideShift API keys in Settings first.', 'warning');
     return;
   }
 
@@ -310,7 +361,7 @@ async function openRequestFromPayment(paymentRequest) {
   syncShiftButton();
 
   if (!hasStoredCredentials()) {
-    setStatus('Add your SideShift API keys below, then tap Create SideShift request.', 'warning');
+    setStatus('Open Settings to add your SideShift API keys, then tap Create SideShift request.', 'warning');
     return;
   }
 
@@ -387,6 +438,7 @@ function bindUi() {
       renderCredsStatus();
       syncShiftButton();
       setStatus('SideShift keys saved for this browser.', 'success');
+      settingsDialog?.close();
     } catch (error) {
       setStatus(error.message, 'error');
     }
@@ -399,6 +451,25 @@ function bindUi() {
     renderCredsStatus();
     syncShiftButton();
     setStatus('SideShift keys cleared from this browser.', 'info');
+  });
+
+  bindModalWithScannerPause(settingsDialog);
+  bindModalWithScannerPause(helpDialog);
+
+  settingsButton?.addEventListener('click', async () => {
+    await openModalWithScannerPause(settingsDialog);
+  });
+
+  helpButton?.addEventListener('click', async () => {
+    await openModalWithScannerPause(helpDialog);
+  });
+
+  closeSettingsButton?.addEventListener('click', () => {
+    settingsDialog?.close();
+  });
+
+  closeHelpButton?.addEventListener('click', () => {
+    helpDialog?.close();
   });
 
   sideshiftButton.addEventListener('click', async () => {
