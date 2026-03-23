@@ -96,6 +96,65 @@ h1 {
   line-height: 1.6;
 }
 
+.hero-lede-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.lede-primary {
+  margin: 0;
+  flex: 1 1 12rem;
+  max-width: 52rem;
+  line-height: 1.6;
+}
+
+.hero-more {
+  flex: 0 0 auto;
+}
+
+.hero-more[open] {
+  flex-basis: 100%;
+}
+
+.lede-continued {
+  margin: 0.35rem 0 0;
+  line-height: 1.6;
+  max-width: 52rem;
+}
+
+.icon-help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  list-style: none;
+}
+
+.icon-help-button::-webkit-details-marker {
+  display: none;
+}
+
+.icon-help-button::marker {
+  content: "";
+}
+
+.icon-help-button:hover {
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #e2e8f0;
+}
+
 .scanner-card,
 .info-card {
   padding: 1.25rem;

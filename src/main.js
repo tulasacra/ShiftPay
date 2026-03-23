@@ -38,6 +38,7 @@ const state = {
   shiftPollLastStatus: null,
   paymentRequest: null,
   shiftOrder: null,
+  shouldResumeScannerAfterModal: false,
 };
 
 function escapeHtml(value) {
@@ -239,6 +240,27 @@ async function stopScanner() {
   state.scanner?.stop();
 }
 
+function isScannerVideoLive() {
+  const stream = video?.srcObject;
+  return stream instanceof MediaStream && stream.getTracks().some((t) => t.readyState === 'live');
+}
+
+async function pauseScannerForModal() {
+  await state.scanner?.pause();
+}
+
+async function resumeScannerAfterModalIfNeeded() {
+  if (!state.shouldResumeScannerAfterModal) {
+    return;
+  }
+  state.shouldResumeScannerAfterModal = false;
+  try {
+    await state.scanner?.start();
+  } catch {
+    // Camera may still be unavailable; keep existing status text.
+  }
+}
+
 async function startScanner() {
   if (!state.scanner) {
     state.scanner = new QrScanner(
@@ -406,8 +428,14 @@ function bindUi() {
   });
 
   if (settingsButton && settingsDialog) {
-    settingsButton.addEventListener('click', () => {
+    settingsButton.addEventListener('click', async () => {
+      state.shouldResumeScannerAfterModal = isScannerVideoLive();
+      await pauseScannerForModal();
       settingsDialog.showModal();
+    });
+
+    settingsDialog.addEventListener('close', () => {
+      void resumeScannerAfterModalIfNeeded();
     });
 
     settingsDialog.addEventListener('click', (event) => {
