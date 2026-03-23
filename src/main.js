@@ -24,6 +24,9 @@ const affiliateIdInput = document.getElementById('affiliateIdInput');
 const secretInput = document.getElementById('secretInput');
 const clearCredsButton = document.getElementById('clearCredsButton');
 const credsStatus = document.getElementById('credsStatus');
+const settingsButton = document.getElementById('settingsButton');
+const settingsDialog = document.getElementById('settingsDialog');
+const closeSettingsButton = document.getElementById('closeSettingsButton');
 
 const SHIFT_POLL_MS = 4000;
 
@@ -267,7 +270,7 @@ async function createShiftFromPayment() {
 
   const creds = getStoredCredentials();
   if (!creds) {
-    setStatus('Add your SideShift API keys first.', 'warning');
+    setStatus('Add your SideShift API keys in Settings first.', 'warning');
     return;
   }
 
@@ -310,7 +313,7 @@ async function openRequestFromPayment(paymentRequest) {
   syncShiftButton();
 
   if (!hasStoredCredentials()) {
-    setStatus('Add your SideShift API keys below, then tap Create SideShift request.', 'warning');
+    setStatus('Open Settings to add your SideShift API keys, then tap Create SideShift request.', 'warning');
     return;
   }
 
@@ -387,6 +390,7 @@ function bindUi() {
       renderCredsStatus();
       syncShiftButton();
       setStatus('SideShift keys saved for this browser.', 'success');
+      settingsDialog?.close();
     } catch (error) {
       setStatus(error.message, 'error');
     }
@@ -399,6 +403,22 @@ function bindUi() {
     renderCredsStatus();
     syncShiftButton();
     setStatus('SideShift keys cleared from this browser.', 'info');
+  });
+
+  if (settingsButton && settingsDialog) {
+    settingsButton.addEventListener('click', () => {
+      settingsDialog.showModal();
+    });
+
+    settingsDialog.addEventListener('click', (event) => {
+      if (event.target === settingsDialog) {
+        settingsDialog.close();
+      }
+    });
+  }
+
+  closeSettingsButton?.addEventListener('click', () => {
+    settingsDialog?.close();
   });
 
   sideshiftButton.addEventListener('click', async () => {

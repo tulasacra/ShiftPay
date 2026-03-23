@@ -16,8 +16,21 @@
     <div class="app-shell">
       <main class="app">
         <section class="hero">
-          <p class="eyebrow">ShiftPay</p>
-          <h1>Scan a payment QR, pay from BCH.</h1>
+          <div class="hero-header">
+            <div class="hero-heading">
+              <p class="eyebrow">ShiftPay</p>
+              <h1>Scan a payment QR, pay from BCH.</h1>
+            </div>
+            <button
+              type="button"
+              id="settingsButton"
+              class="secondary-button"
+              aria-haspopup="dialog"
+              aria-controls="settingsDialog"
+            >
+              Settings
+            </button>
+          </div>
           <p class="lede">
             Point your camera at a supported crypto payment QR. ShiftPay creates a fixed-rate SideShift
             shift via the API and then gives you a BCH wallet deep link for the exact deposit. Each user
@@ -25,9 +38,12 @@
           </p>
         </section>
 
-        <section class="creds-section">
-          <article class="info-card">
-            <h2>Your SideShift API keys</h2>
+        <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="settingsDialogTitle">SideShift API keys</h2>
+              <button type="button" id="closeSettingsButton" class="secondary-button">Done</button>
+            </div>
             <p class="muted creds-lede">
               A SideShift account is created when you visit the
               <a href="https://sideshift.ai/account" target="_blank" rel="noopener noreferrer">account page</a>.
@@ -73,7 +89,7 @@
             </form>
             <p id="credsStatus" class="creds-status muted" role="status"></p>
           </article>
-        </section>
+        </dialog>
 
         <section class="scanner-card">
           <div class="card-header">

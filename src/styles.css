@@ -79,6 +79,17 @@ h1 {
   color: #94a3b8;
 }
 
+.hero-header {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hero-heading {
+  min-width: 0;
+}
+
 .lede {
   margin: 0.9rem 0 0;
   max-width: 52rem;
@@ -255,8 +266,41 @@ h1 {
   color: #cbd5e1;
 }
 
-.creds-section {
-  width: 100%;
+.settings-dialog {
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 1.5rem;
+  background: transparent;
+  color: inherit;
+  overflow: auto;
+}
+
+.settings-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.settings-dialog-card {
+  margin: 0;
+  border: none;
+  border-radius: 1.5rem;
+  box-shadow: none;
+}
+
+.settings-dialog-head {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.settings-dialog-head h2 {
+  flex: 1;
+  min-width: 0;
 }
 
 .creds-lede strong {
@@ -313,5 +357,10 @@ h1 {
 
   .card-header {
     flex-direction: column;
+  }
+
+  .hero-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
