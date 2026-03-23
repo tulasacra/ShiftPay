@@ -90,69 +90,51 @@ h1 {
   min-width: 0;
 }
 
+.hero-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .lede {
   margin: 0.9rem 0 0;
   max-width: 52rem;
   line-height: 1.6;
 }
 
-.hero-lede-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.5rem;
-  margin-top: 0.9rem;
-}
-
-.lede-primary {
-  margin: 0;
-  flex: 1 1 12rem;
-  max-width: 52rem;
-  line-height: 1.6;
-}
-
-.hero-more {
-  flex: 0 0 auto;
-}
-
-.hero-more[open] {
-  flex-basis: 100%;
-}
-
-.lede-continued {
-  margin: 0.35rem 0 0;
-  line-height: 1.6;
-  max-width: 52rem;
-}
-
 .icon-help-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(15, 23, 42, 0.85);
   color: #cbd5e1;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  list-style: none;
-}
-
-.icon-help-button::-webkit-details-marker {
-  display: none;
-}
-
-.icon-help-button::marker {
-  content: "";
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
 }
 
 .icon-help-button:hover {
   border-color: rgba(34, 197, 94, 0.45);
   color: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.help-dialog-body {
+  margin: 0;
+  line-height: 1.6;
 }
 
 .scanner-card,
@@ -421,5 +403,10 @@ h1 {
   .hero-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .hero-header-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

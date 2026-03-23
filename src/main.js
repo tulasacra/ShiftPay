@@ -27,6 +27,9 @@ const credsStatus = document.getElementById('credsStatus');
 const settingsButton = document.getElementById('settingsButton');
 const settingsDialog = document.getElementById('settingsDialog');
 const closeSettingsButton = document.getElementById('closeSettingsButton');
+const helpButton = document.getElementById('helpButton');
+const helpDialog = document.getElementById('helpDialog');
+const closeHelpButton = document.getElementById('closeHelpButton');
 
 const SHIFT_POLL_MS = 4000;
 
@@ -261,6 +264,29 @@ async function resumeScannerAfterModalIfNeeded() {
   }
 }
 
+function bindModalWithScannerPause(dialog) {
+  if (!dialog) {
+    return;
+  }
+  dialog.addEventListener('close', () => {
+    void resumeScannerAfterModalIfNeeded();
+  });
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
+}
+
+async function openModalWithScannerPause(dialog) {
+  if (!dialog) {
+    return;
+  }
+  state.shouldResumeScannerAfterModal = isScannerVideoLive();
+  await pauseScannerForModal();
+  dialog.showModal();
+}
+
 async function startScanner() {
   if (!state.scanner) {
     state.scanner = new QrScanner(
@@ -427,26 +453,23 @@ function bindUi() {
     setStatus('SideShift keys cleared from this browser.', 'info');
   });
 
-  if (settingsButton && settingsDialog) {
-    settingsButton.addEventListener('click', async () => {
-      state.shouldResumeScannerAfterModal = isScannerVideoLive();
-      await pauseScannerForModal();
-      settingsDialog.showModal();
-    });
+  bindModalWithScannerPause(settingsDialog);
+  bindModalWithScannerPause(helpDialog);
 
-    settingsDialog.addEventListener('close', () => {
-      void resumeScannerAfterModalIfNeeded();
-    });
+  settingsButton?.addEventListener('click', async () => {
+    await openModalWithScannerPause(settingsDialog);
+  });
 
-    settingsDialog.addEventListener('click', (event) => {
-      if (event.target === settingsDialog) {
-        settingsDialog.close();
-      }
-    });
-  }
+  helpButton?.addEventListener('click', async () => {
+    await openModalWithScannerPause(helpDialog);
+  });
 
   closeSettingsButton?.addEventListener('click', () => {
     settingsDialog?.close();
+  });
+
+  closeHelpButton?.addEventListener('click', () => {
+    helpDialog?.close();
   });
 
   sideshiftButton.addEventListener('click', async () => {

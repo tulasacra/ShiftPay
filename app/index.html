@@ -21,30 +21,46 @@
               <p class="eyebrow">ShiftPay</p>
               <h1>Scan a payment QR, pay from BCH.</h1>
             </div>
-            <button
-              type="button"
-              id="settingsButton"
-              class="secondary-button"
-              aria-haspopup="dialog"
-              aria-controls="settingsDialog"
-            >
-              Settings
-            </button>
+            <div class="hero-header-actions">
+              <button
+                type="button"
+                id="settingsButton"
+                class="secondary-button"
+                aria-haspopup="dialog"
+                aria-controls="settingsDialog"
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                id="helpButton"
+                class="icon-help-button"
+                aria-label="About ShiftPay"
+                aria-haspopup="dialog"
+                aria-controls="helpDialog"
+              >
+                ?
+              </button>
+            </div>
           </div>
-          <div class="hero-lede-line">
-            <p class="lede lede-primary">
-              Point your camera at a supported crypto payment QR.
-            </p>
-            <details class="hero-more">
-              <summary class="icon-help-button" aria-label="More about how ShiftPay works">?</summary>
-              <p class="muted lede-continued">
-                ShiftPay creates a fixed-rate SideShift shift via the API and then gives you a BCH wallet
-                deep link for the exact deposit. Each user brings their own SideShift API keys (stored only
-                in this browser).
-              </p>
-            </details>
-          </div>
+          <p class="lede">
+            Point your camera at a supported crypto payment QR.
+          </p>
         </section>
+
+        <dialog id="helpDialog" class="settings-dialog" aria-labelledby="helpDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="helpDialogTitle">About ShiftPay</h2>
+              <button type="button" id="closeHelpButton" class="secondary-button">Done</button>
+            </div>
+            <p class="muted help-dialog-body">
+              ShiftPay creates a fixed-rate SideShift shift via the API and then gives you a BCH wallet deep
+              link for the exact deposit. Each user brings their own SideShift API keys (stored only in this
+              browser).
+            </p>
+          </article>
+        </dialog>
 
         <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle">
           <article class="info-card settings-dialog-card">
