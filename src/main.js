@@ -86,10 +86,22 @@ function setWalletLinkState(deepLink) {
   walletLink.setAttribute('aria-disabled', 'false');
 }
 
+function updateScannerTargetPanelVisibility() {
+  if (!scannerFrame || !scannerTargetPanel) {
+    return;
+  }
+  const showPanel = Boolean(state.paymentRequest) && !isScannerVideoLive();
+  if (showPanel) {
+    scannerFrame.classList.add('scanner-frame--has-target');
+    scannerTargetPanel.removeAttribute('hidden');
+  } else {
+    scannerFrame.classList.remove('scanner-frame--has-target');
+    scannerTargetPanel.setAttribute('hidden', '');
+  }
+}
+
 function renderTargetDetails(paymentRequest) {
   if (!paymentRequest) {
-    scannerFrame?.classList.remove('scanner-frame--has-target');
-    scannerTargetPanel?.setAttribute('hidden', '');
     targetDetails.className = 'detail-list detail-list--placeholder';
     targetDetails.innerHTML = `
       <div>
@@ -97,11 +109,10 @@ function renderTargetDetails(paymentRequest) {
         <dd>Scan a supported QR code to inspect the target payment.</dd>
       </div>
     `;
+    updateScannerTargetPanelVisibility();
     return;
   }
 
-  scannerFrame?.classList.add('scanner-frame--has-target');
-  scannerTargetPanel?.removeAttribute('hidden');
   targetDetails.className = 'detail-list';
   targetDetails.innerHTML = `
     <div>
@@ -123,6 +134,7 @@ function renderTargetDetails(paymentRequest) {
       <dd title="${escapeHtml(paymentRequest.raw)}">${escapeHtml(truncateMiddle(paymentRequest.raw, 18))}</dd>
     </div>
   `;
+  updateScannerTargetPanelVisibility();
 }
 
 function renderShiftDetails(order) {
@@ -312,10 +324,12 @@ async function startScanner(options = {}) {
 
   try {
     await state.scanner.start();
+    updateScannerTargetPanelVisibility();
     if (!preserveStatusOnReady) {
       setStatus('Camera ready. Scan a supported payment QR.', 'info');
     }
   } catch (error) {
+    updateScannerTargetPanelVisibility();
     if (!preserveStatusOnReady) {
       setStatus('Camera unavailable here. Use "Scan from image" instead.', 'warning');
     }
@@ -498,6 +512,9 @@ function bindUi() {
     }
   });
 
+  video?.addEventListener('emptied', () => {
+    updateScannerTargetPanelVisibility();
+  });
 }
 
 renderTargetDetails(null);
