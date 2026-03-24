@@ -287,7 +287,9 @@ async function openModalWithScannerPause(dialog) {
   dialog.showModal();
 }
 
-async function startScanner() {
+async function startScanner(options = {}) {
+  const preserveStatusOnReady = Boolean(options.preserveStatusOnReady);
+
   if (!state.scanner) {
     state.scanner = new QrScanner(
       video,
@@ -304,9 +306,13 @@ async function startScanner() {
 
   try {
     await state.scanner.start();
-    setStatus('Camera ready. Scan a supported payment QR.', 'info');
+    if (!preserveStatusOnReady) {
+      setStatus('Camera ready. Scan a supported payment QR.', 'info');
+    }
   } catch (error) {
-    setStatus('Camera unavailable here. Use "Scan from image" instead.', 'warning');
+    if (!preserveStatusOnReady) {
+      setStatus('Camera unavailable here. Use "Scan from image" instead.', 'warning');
+    }
   }
 }
 
@@ -384,7 +390,7 @@ async function handleDecodedText(decodedText) {
     renderTargetDetails(null);
     resetShiftState();
     setStatus(error.message, 'error');
-    await startScanner();
+    await startScanner({ preserveStatusOnReady: true });
   } finally {
     state.isBusy = false;
   }
