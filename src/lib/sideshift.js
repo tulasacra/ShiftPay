@@ -24,6 +24,28 @@ function httpErrorMessage(data, fallback) {
   return fallback;
 }
 
+/**
+ * SideShift min/max deposit errors often end with a bare number; fixed BCH→* quotes use BCH as deposit.
+ * Settle-side errors refer to the scanned payment amount (paymentRequest currency).
+ */
+export function enrichSideshiftAmountErrorMessage(message, paymentRequest) {
+  if (!message || !paymentRequest?.currencyCode) {
+    return message;
+  }
+
+  const s = String(message).trim();
+  const { currencyCode } = paymentRequest;
+
+  const depositLow = /^Amount too low\. Minimum deposit amount:\s*([\d.eE+-]+)\s*$/i;
+  const depositHigh = /^Amount too high\. Maximum deposit amount:\s*([\d.eE+-]+)\s*$/i;
+
+  if ((depositLow.test(s) || depositHigh.test(s)) && !/\bBCH\b/i.test(s)) {
+    return `${s} BCH`;
+  }
+
+  return message;
+}
+
 function authHeaders(secret) {
   return {
     'Content-Type': 'application/json',
@@ -58,7 +80,7 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
 
   if (!quoteRes.ok) {
     const msg = httpErrorMessage(quoteData, quoteText || `HTTP ${quoteRes.status}`);
-    throw new Error(msg);
+    throw new Error(enrichSideshiftAmountErrorMessage(msg, paymentRequest));
   }
 
   const quoteId = quoteData?.id;
