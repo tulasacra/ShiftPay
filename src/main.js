@@ -17,6 +17,8 @@ const imageInput = document.getElementById('imageInput');
 const rescanButton = document.getElementById('rescanButton');
 const sideshiftButton = document.getElementById('sideshiftButton');
 const walletLink = document.getElementById('walletLink');
+const scannerFrame = document.getElementById('scannerFrame');
+const scannerTargetPanel = document.getElementById('scannerTargetPanel');
 const targetDetails = document.getElementById('targetDetails');
 const shiftDetails = document.getElementById('shiftDetails');
 const sideshiftCredsForm = document.getElementById('sideshiftCredsForm');
@@ -84,15 +86,25 @@ function setWalletLinkState(deepLink) {
   walletLink.setAttribute('aria-disabled', 'false');
 }
 
+function updateScannerTargetPanelVisibility() {
+  if (!scannerFrame || !scannerTargetPanel) {
+    return;
+  }
+  const showPanel = Boolean(state.paymentRequest) && !isScannerVideoLive();
+  if (showPanel) {
+    scannerFrame.classList.add('scanner-frame--has-target');
+    scannerTargetPanel.removeAttribute('hidden');
+  } else {
+    scannerFrame.classList.remove('scanner-frame--has-target');
+    scannerTargetPanel.setAttribute('hidden', '');
+  }
+}
+
 function renderTargetDetails(paymentRequest) {
   if (!paymentRequest) {
-    targetDetails.className = 'detail-list detail-list--placeholder';
-    targetDetails.innerHTML = `
-      <div>
-        <dt>Status</dt>
-        <dd>Scan a supported QR code to inspect the target payment.</dd>
-      </div>
-    `;
+    targetDetails.className = 'detail-list';
+    targetDetails.innerHTML = '';
+    updateScannerTargetPanelVisibility();
     return;
   }
 
@@ -117,6 +129,7 @@ function renderTargetDetails(paymentRequest) {
       <dd title="${escapeHtml(paymentRequest.raw)}">${escapeHtml(truncateMiddle(paymentRequest.raw, 18))}</dd>
     </div>
   `;
+  updateScannerTargetPanelVisibility();
 }
 
 function renderShiftDetails(order) {
@@ -306,10 +319,12 @@ async function startScanner(options = {}) {
 
   try {
     await state.scanner.start();
+    updateScannerTargetPanelVisibility();
     if (!preserveStatusOnReady) {
       setStatus('Camera ready. Scan a supported payment QR.', 'info');
     }
   } catch (error) {
+    updateScannerTargetPanelVisibility();
     if (!preserveStatusOnReady) {
       setStatus('Camera unavailable here. Use "Scan from image" instead.', 'warning');
     }
@@ -492,6 +507,9 @@ function bindUi() {
     }
   });
 
+  video?.addEventListener('emptied', () => {
+    updateScannerTargetPanelVisibility();
+  });
 }
 
 renderTargetDetails(null);
