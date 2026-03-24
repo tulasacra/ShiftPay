@@ -17,6 +17,8 @@ const imageInput = document.getElementById('imageInput');
 const rescanButton = document.getElementById('rescanButton');
 const sideshiftButton = document.getElementById('sideshiftButton');
 const walletLink = document.getElementById('walletLink');
+const scannerFrame = document.getElementById('scannerFrame');
+const scannerTargetPanel = document.getElementById('scannerTargetPanel');
 const targetDetails = document.getElementById('targetDetails');
 const shiftDetails = document.getElementById('shiftDetails');
 const sideshiftCredsForm = document.getElementById('sideshiftCredsForm');
@@ -86,6 +88,8 @@ function setWalletLinkState(deepLink) {
 
 function renderTargetDetails(paymentRequest) {
   if (!paymentRequest) {
+    scannerFrame?.classList.remove('scanner-frame--has-target');
+    scannerTargetPanel?.setAttribute('hidden', '');
     targetDetails.className = 'detail-list detail-list--placeholder';
     targetDetails.innerHTML = `
       <div>
@@ -96,6 +100,8 @@ function renderTargetDetails(paymentRequest) {
     return;
   }
 
+  scannerFrame?.classList.add('scanner-frame--has-target');
+  scannerTargetPanel?.removeAttribute('hidden');
   targetDetails.className = 'detail-list';
   targetDetails.innerHTML = `
     <div>
