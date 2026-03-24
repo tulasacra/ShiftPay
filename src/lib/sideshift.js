@@ -40,7 +40,9 @@ export function enrichSideshiftAmountErrorMessage(message, paymentRequest) {
   const depositHigh = /^Amount too high\. Maximum deposit amount:\s*([\d.eE+-]+)\s*$/i;
 
   if ((depositLow.test(s) || depositHigh.test(s)) && !/\bBCH\b/i.test(s)) {
-    return `${s} BCH`;
+    // API sometimes ends the numeric amount with a full stop; avoid "... 0.01. BCH".
+    const base = s.replace(/\.\s*$/, '');
+    return `${base} BCH`;
   }
 
   return message;
