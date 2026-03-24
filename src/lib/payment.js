@@ -79,19 +79,21 @@ function requireSupportedScheme(scheme) {
   return config;
 }
 
-function parseAmount(amountText) {
+function parseAmount(amountText, currencyCode) {
+  const unit = currencyCode ? ` (${currencyCode})` : '';
+
   if (!amountText) {
-    throw new Error('The payment code is missing an amount.');
+    throw new Error(`The payment code is missing an amount${unit}.`);
   }
 
   if (!DECIMAL_PATTERN.test(amountText)) {
-    throw new Error('The payment amount must be a positive decimal value.');
+    throw new Error(`The payment amount must be a positive decimal value${unit}.`);
   }
 
   const numericAmount = Number(amountText);
 
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    throw new Error('The payment amount must be greater than zero.');
+    throw new Error(`The payment amount must be greater than zero${unit}.`);
   }
 
   return amountText;
@@ -100,7 +102,7 @@ function parseAmount(amountText) {
 export function parsePaymentCode(rawValue) {
   const { scheme, address, query, raw } = parseUriParts(rawValue);
   const config = requireSupportedScheme(scheme);
-  const amount = parseAmount(query.amount);
+  const amount = parseAmount(query.amount, config.currencyCode);
 
   if (!address) {
     throw new Error('The payment code is missing a destination address.');

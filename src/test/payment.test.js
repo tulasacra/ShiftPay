@@ -18,7 +18,7 @@ describe('parsePaymentCode', () => {
 
   it('rejects missing amounts', () => {
     expect(() => parsePaymentCode('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toThrow(
-      'The payment code is missing an amount.',
+      'The payment code is missing an amount (BTC).',
     );
   });
 
