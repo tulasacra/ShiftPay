@@ -14,6 +14,15 @@ describe('enrichSideshiftAmountErrorMessage', () => {
     ).toBe('Amount too low. Minimum deposit amount: 0.00012345 BCH');
   });
 
+  it('drops a trailing period after the amount before appending BCH', () => {
+    expect(
+      enrichSideshiftAmountErrorMessage(
+        'Amount too low. Minimum deposit amount: 0.01056636.',
+        btcPayment,
+      ),
+    ).toBe('Amount too low. Minimum deposit amount: 0.01056636 BCH');
+  });
+
   it('appends BCH to maximum deposit errors with a bare number', () => {
     expect(
       enrichSideshiftAmountErrorMessage(
