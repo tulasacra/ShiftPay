@@ -102,13 +102,8 @@ function updateScannerTargetPanelVisibility() {
 
 function renderTargetDetails(paymentRequest) {
   if (!paymentRequest) {
-    targetDetails.className = 'detail-list detail-list--placeholder';
-    targetDetails.innerHTML = `
-      <div>
-        <dt>Status</dt>
-        <dd>Scan a supported QR code to inspect the target payment.</dd>
-      </div>
-    `;
+    targetDetails.className = 'detail-list';
+    targetDetails.innerHTML = '';
     updateScannerTargetPanelVisibility();
     return;
   }

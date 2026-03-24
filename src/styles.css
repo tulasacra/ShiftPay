@@ -202,6 +202,11 @@ h1 {
   opacity: 0;
 }
 
+/* `display: flex` must not beat the HTML `hidden` attribute (user-agent `display:none`). */
+.scanner-target-panel[hidden] {
+  display: none !important;
+}
+
 .scanner-target-panel {
   position: absolute;
   inset: 0;
