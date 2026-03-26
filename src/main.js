@@ -1,6 +1,7 @@
 import QrScanner from 'qr-scanner';
 
 import { buildBchDeepLink, parsePaymentCode, truncateMiddle } from './lib/payment.js';
+import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
   clearStoredCredentials,
   getStoredCredentials,
@@ -523,5 +524,33 @@ if (existingCreds && affiliateIdInput) {
 syncShiftButton();
 bindUi();
 registerServiceWorker();
-setStatus('Requesting camera access...', 'info');
-startScanner();
+
+async function init() {
+  let bootstrapFailed = false;
+  if (!hasStoredCredentials()) {
+    setStatus('Creating your SideShift account…', 'info');
+    try {
+      const { affiliateId, secret } = await createAccountViaGraphql();
+      saveCredentials(secret, affiliateId);
+      if (affiliateIdInput) {
+        affiliateIdInput.value = affiliateId;
+      }
+      renderCredsStatus();
+      syncShiftButton();
+    } catch (error) {
+      bootstrapFailed = true;
+      setStatus(
+        error?.message ||
+          'Could not create a SideShift account. Add keys in Settings or try again.',
+        'error',
+      );
+    }
+  }
+
+  if (!bootstrapFailed) {
+    setStatus('Requesting camera access...', 'info');
+  }
+  await startScanner({ preserveStatusOnReady: bootstrapFailed });
+}
+
+void init();

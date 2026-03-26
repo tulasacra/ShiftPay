@@ -59,8 +59,9 @@
               </p>
               <p class="muted help-dialog-body">
                 ShiftPay creates a fixed-rate SideShift shift via the API and then gives you a BCH wallet deep
-                link for the exact deposit. Each user brings their own SideShift API keys (stored only in this
-                browser).
+                link for the exact deposit. On first launch, ShiftPay creates a SideShift account for this
+                browser; you can replace the keys in Settings or clear them anytime (keys stay on this device
+                only).
               </p>
             </div>
           </article>
@@ -73,9 +74,10 @@
               <button type="button" id="closeSettingsButton" class="secondary-button">Done</button>
             </div>
             <p class="muted creds-lede">
-              A SideShift account is created when you visit the
-              <a href="https://sideshift.ai/account" target="_blank" rel="noopener noreferrer">account page</a>.
-              Copy your <strong>private key</strong> and <strong>account ID</strong> (affiliate id) here. They
+              By default, ShiftPay creates an account for you on first launch. To use an existing account from
+              the
+              <a href="https://sideshift.ai/account" target="_blank" rel="noopener noreferrer">account page</a>,
+              paste your <strong>private key</strong> and <strong>account ID</strong> (affiliate id) here. They
               never leave your device except when calling SideShift.
             </p>
             <form id="sideshiftCredsForm" class="credential-form">
