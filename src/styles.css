@@ -62,6 +62,13 @@ label {
   letter-spacing: 0.12em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.hero-title-shift {
+  color: #f7931a;
+}
+
+.hero-title-pay {
   color: #22c55e;
 }
 
