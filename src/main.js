@@ -1,6 +1,6 @@
 import QrScanner from 'qr-scanner';
 
-import { buildBchDeepLink, parsePaymentCode, truncateMiddle } from './lib/payment.js';
+import { buildBchDeepLink, parsePaymentCode } from './lib/payment.js';
 import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
   clearStoredCredentials,
@@ -121,13 +121,11 @@ function renderTargetDetails(paymentRequest) {
     </div>
     <div>
       <dt>Recipient</dt>
-      <dd title="${escapeHtml(paymentRequest.address)}">${escapeHtml(
-        truncateMiddle(paymentRequest.address),
-      )}</dd>
+      <dd>${escapeHtml(paymentRequest.address)}</dd>
     </div>
     <div>
       <dt>URI</dt>
-      <dd title="${escapeHtml(paymentRequest.raw)}">${escapeHtml(truncateMiddle(paymentRequest.raw, 18))}</dd>
+      <dd>${escapeHtml(paymentRequest.raw)}</dd>
     </div>
   `;
   updateScannerTargetPanelVisibility();
@@ -153,9 +151,7 @@ function renderShiftDetails(order) {
     </div>
     <div>
       <dt>BCH address</dt>
-      <dd title="${escapeHtml(order.depositAddress)}">${escapeHtml(
-        truncateMiddle(order.depositAddress),
-      )}</dd>
+      <dd>${escapeHtml(order.depositAddress)}</dd>
     </div>
     <div>
       <dt>Target payout</dt>
@@ -165,15 +161,13 @@ function renderShiftDetails(order) {
     </div>
     <div>
       <dt>Order</dt>
-      <dd title="${escapeHtml(order.id || order.orderId || '')}">${escapeHtml(
-        truncateMiddle(order.id || order.orderId || 'Pending'),
-      )}</dd>
+      <dd>${escapeHtml(order.id || order.orderId || 'Pending')}</dd>
     </div>
     ${
       order.depositMemo
         ? `<div>
       <dt>BCH memo</dt>
-      <dd title="${escapeHtml(order.depositMemo)}">${escapeHtml(truncateMiddle(order.depositMemo))}</dd>
+      <dd>${escapeHtml(order.depositMemo)}</dd>
     </div>`
         : ''
     }
