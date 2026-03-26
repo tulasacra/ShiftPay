@@ -36,6 +36,8 @@ const closeHelpButton = document.getElementById('closeHelpButton');
 
 const SHIFT_POLL_MS = 4000;
 
+const SECRET_MASK = '*'.repeat(24);
+
 const state = {
   scanner: null,
   isBusy: false,
@@ -59,6 +61,49 @@ function escapeHtml(value) {
 function setStatus(message, tone = 'info') {
   statusBanner.textContent = message;
   statusBanner.className = `status-banner ${tone}`;
+}
+
+function applySecretMaskState() {
+  if (!secretInput) {
+    return;
+  }
+  const creds = getStoredCredentials();
+  if (creds?.secret) {
+    secretInput.type = 'text';
+    secretInput.value = SECRET_MASK;
+    secretInput.readOnly = true;
+    secretInput.dataset.masked = 'true';
+  } else {
+    secretInput.type = 'password';
+    secretInput.value = '';
+    secretInput.readOnly = false;
+    delete secretInput.dataset.masked;
+  }
+}
+
+function clearSecretMaskForEdit() {
+  if (!secretInput || secretInput.dataset.masked !== 'true') {
+    return;
+  }
+  secretInput.type = 'password';
+  secretInput.value = '';
+  secretInput.readOnly = false;
+  delete secretInput.dataset.masked;
+}
+
+function resolveSecretForSave() {
+  const trimmed = secretInput.value.trim();
+  const stored = getStoredCredentials();
+  if (secretInput.dataset.masked === 'true' && stored?.secret) {
+    return stored.secret;
+  }
+  if (trimmed === SECRET_MASK && stored?.secret) {
+    return stored.secret;
+  }
+  if (!trimmed && stored?.secret) {
+    return stored.secret;
+  }
+  return trimmed;
 }
 
 function renderCredsStatus() {
@@ -449,8 +494,8 @@ function bindUi() {
   sideshiftCredsForm.addEventListener('submit', (event) => {
     event.preventDefault();
     try {
-      saveCredentials(secretInput.value, affiliateIdInput.value);
-      secretInput.value = '';
+      saveCredentials(resolveSecretForSave(), affiliateIdInput.value);
+      applySecretMaskState();
       renderCredsStatus();
       syncShiftButton();
       setStatus('SideShift keys saved for this browser.', 'success');
@@ -463,10 +508,26 @@ function bindUi() {
   clearCredsButton.addEventListener('click', () => {
     clearStoredCredentials();
     affiliateIdInput.value = '';
-    secretInput.value = '';
+    applySecretMaskState();
     renderCredsStatus();
     syncShiftButton();
     setStatus('SideShift keys cleared from this browser.', 'info');
+  });
+
+  secretInput?.addEventListener('focus', () => {
+    clearSecretMaskForEdit();
+  });
+
+  secretInput?.addEventListener('blur', () => {
+    if (!secretInput.value.trim() && getStoredCredentials()) {
+      applySecretMaskState();
+    }
+  });
+
+  settingsDialog?.addEventListener('toggle', () => {
+    if (settingsDialog.open) {
+      applySecretMaskState();
+    }
   });
 
   bindModalWithScannerPause(settingsDialog);
@@ -515,6 +576,7 @@ const existingCreds = getStoredCredentials();
 if (existingCreds && affiliateIdInput) {
   affiliateIdInput.value = existingCreds.affiliateId;
 }
+applySecretMaskState();
 syncShiftButton();
 bindUi();
 registerServiceWorker();
@@ -529,6 +591,7 @@ async function init() {
       if (affiliateIdInput) {
         affiliateIdInput.value = affiliateId;
       }
+      applySecretMaskState();
       renderCredsStatus();
       syncShiftButton();
     } catch (error) {
