@@ -278,6 +278,15 @@ h1 {
   margin-top: 1rem;
 }
 
+.button-stack--wallet {
+  flex-direction: column;
+}
+
+.button-stack--wallet .primary-button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .secondary-button:disabled,
 .primary-button:disabled,
 .primary-button.disabled {
