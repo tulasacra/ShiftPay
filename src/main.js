@@ -16,7 +16,6 @@ const video = document.getElementById('scannerVideo');
 const overlay = document.getElementById('scannerOverlay');
 const imageInput = document.getElementById('imageInput');
 const rescanButton = document.getElementById('rescanButton');
-const sideshiftButton = document.getElementById('sideshiftButton');
 const walletLink = document.getElementById('walletLink');
 const scannerFrame = document.getElementById('scannerFrame');
 const scannerTargetPanel = document.getElementById('scannerTargetPanel');
@@ -113,10 +112,6 @@ function renderCredsStatus() {
   credsStatus.textContent = hasStoredCredentials()
     ? 'Keys saved in this browser only. Clear them if you share this device.'
     : 'No keys saved yet.';
-}
-
-function syncShiftButton() {
-  sideshiftButton.disabled = !state.paymentRequest || !hasStoredCredentials();
 }
 
 function setWalletLinkState(deepLink) {
@@ -419,10 +414,9 @@ async function openRequestFromPayment(paymentRequest) {
   state.paymentRequest = paymentRequest;
   renderTargetDetails(paymentRequest);
   resetShiftState();
-  syncShiftButton();
 
   if (!hasStoredCredentials()) {
-    setStatus('Open Settings to add your SideShift API keys, then tap Create SideShift request.', 'warning');
+    setStatus('Open Settings to add your SideShift API keys. Saving keys creates the fixed-rate request.', 'warning');
     return;
   }
 
@@ -486,20 +480,21 @@ function bindUi() {
     state.paymentRequest = null;
     renderTargetDetails(null);
     resetShiftState();
-    syncShiftButton();
     setStatus('Ready to scan again.', 'info');
     await startScanner();
   });
 
-  sideshiftCredsForm.addEventListener('submit', (event) => {
+  sideshiftCredsForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     try {
       saveCredentials(resolveSecretForSave(), affiliateIdInput.value);
       applySecretMaskState();
       renderCredsStatus();
-      syncShiftButton();
       setStatus('SideShift keys saved for this browser.', 'success');
       settingsDialog?.close();
+      if (state.paymentRequest && hasStoredCredentials()) {
+        await createShiftFromPayment();
+      }
     } catch (error) {
       setStatus(error.message, 'error');
     }
@@ -510,7 +505,6 @@ function bindUi() {
     affiliateIdInput.value = '';
     applySecretMaskState();
     renderCredsStatus();
-    syncShiftButton();
     setStatus('SideShift keys cleared from this browser.', 'info');
   });
 
@@ -549,14 +543,6 @@ function bindUi() {
     helpDialog?.close();
   });
 
-  sideshiftButton.addEventListener('click', async () => {
-    if (!state.paymentRequest || !hasStoredCredentials()) {
-      return;
-    }
-
-    await createShiftFromPayment();
-  });
-
   walletLink.addEventListener('click', (event) => {
     if (walletLink.classList.contains('disabled')) {
       event.preventDefault();
@@ -577,7 +563,6 @@ if (existingCreds && affiliateIdInput) {
   affiliateIdInput.value = existingCreds.affiliateId;
 }
 applySecretMaskState();
-syncShiftButton();
 bindUi();
 registerServiceWorker();
 
@@ -593,7 +578,6 @@ async function init() {
       }
       applySecretMaskState();
       renderCredsStatus();
-      syncShiftButton();
     } catch (error) {
       bootstrapFailed = true;
       setStatus(
