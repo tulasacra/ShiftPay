@@ -52,15 +52,23 @@ label {
 }
 
 .hero {
-  padding: 1.75rem;
+  padding: 1.25rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+.hero-title {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.12em;
+  line-height: 1;
   text-transform: uppercase;
+}
+
+.hero-title-shift {
+  color: #f7931a;
+}
+
+.hero-title-pay {
   color: #22c55e;
 }
 
@@ -83,7 +91,7 @@ h1 {
   display: flex;
   gap: 1rem;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .hero-heading {

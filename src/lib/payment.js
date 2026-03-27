@@ -133,12 +133,4 @@ export function buildBchDeepLink(address, amount, memo) {
   return `bitcoincash:${normalizedAddress}?${params.toString()}`;
 }
 
-export function truncateMiddle(value, visibleLength = 8) {
-  if (!value || value.length <= visibleLength * 2 + 1) {
-    return value;
-  }
-
-  return `${value.slice(0, visibleLength)}...${value.slice(-visibleLength)}`;
-}
-
 export { SUPPORTED_SCHEMES };

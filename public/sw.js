@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shiftpay-v1';
+const CACHE_NAME = 'shiftpay-v2';
 const APP_SHELL_URL = new URL('./', self.registration.scope).href;
 const MANIFEST_URL = new URL('manifest.webmanifest', self.registration.scope).href;
 const ICON_URL = new URL('icon.svg', self.registration.scope).href;
