@@ -174,12 +174,7 @@ function renderTargetDetails(paymentRequest) {
 function renderShiftDetails(order) {
   if (!order?.depositAddress || !order?.depositAmount) {
     shiftDetails.className = 'detail-list detail-list--placeholder';
-    shiftDetails.innerHTML = `
-      <div>
-        <dt>Status</dt>
-        <dd>Create a fixed-rate request to see the BCH deposit amount and address.</dd>
-      </div>
-    `;
+    shiftDetails.innerHTML = '';
     return;
   }
 
