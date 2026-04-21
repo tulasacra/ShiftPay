@@ -366,18 +366,13 @@ async function startScanner(options = {}) {
   }
 }
 
-async function resolveSideshiftPermissions(creds) {
-  if (!creds?.secret) {
-    state.sideshiftCreateShiftAllowed = true;
-    return null;
-  }
-
+async function resolveSideshiftPermissions() {
   try {
-    const allowed = await fetchCreateShiftPermission(creds.secret);
+    const allowed = await fetchCreateShiftPermission();
     state.sideshiftCreateShiftAllowed = allowed;
     if (!allowed) {
       setStatus(
-        'SideShift is not allowing shifts from this account or location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
+        'SideShift is not allowing shifts from this location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
         'error',
       );
     }
@@ -402,7 +397,7 @@ async function createShiftFromPayment() {
 
   if (!state.sideshiftCreateShiftAllowed) {
     setStatus(
-      'SideShift is not allowing shifts from this account or location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
+      'SideShift is not allowing shifts from this location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
       'error',
     );
     return;
@@ -520,7 +515,6 @@ function bindUi() {
       saveCredentials(resolveSecretForSave(), affiliateIdInput.value);
       applySecretMaskState();
       renderCredsStatus();
-      const permDetail = await resolveSideshiftPermissions(getStoredCredentials());
       if (!state.sideshiftCreateShiftAllowed) {
         settingsDialog?.close();
         if (state.paymentRequest) {
@@ -528,14 +522,7 @@ function bindUi() {
         }
         return;
       }
-      if (permDetail) {
-        setStatus(
-          `SideShift keys saved. Could not verify permissions (${permDetail}); you can still try scanning.`,
-          'warning',
-        );
-      } else {
-        setStatus('SideShift keys saved for this browser.', 'success');
-      }
+      setStatus('SideShift keys saved for this browser.', 'success');
       settingsDialog?.close();
       if (state.paymentRequest && hasStoredCredentials()) {
         await createShiftFromPayment();
@@ -547,7 +534,6 @@ function bindUi() {
 
   clearCredsButton.addEventListener('click', () => {
     clearStoredCredentials();
-    state.sideshiftCreateShiftAllowed = true;
     affiliateIdInput.value = '';
     applySecretMaskState();
     renderCredsStatus();
@@ -636,7 +622,7 @@ async function init() {
 
   let permDetail = null;
   if (!bootstrapFailed) {
-    permDetail = await resolveSideshiftPermissions(getStoredCredentials());
+    permDetail = await resolveSideshiftPermissions();
   }
 
   if (!bootstrapFailed && state.sideshiftCreateShiftAllowed) {

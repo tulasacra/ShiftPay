@@ -48,27 +48,32 @@ describe('fetchCreateShiftPermission', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns createShift from a 200 response', async () => {
+  it('returns createShift from a 200 response without sending a secret', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => JSON.stringify({ createShift: true }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchCreateShiftPermission()).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://sideshift.ai/api/v2/permissions',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init?.headers).toBeUndefined();
+  });
+
+  it('returns false for restricted IPs', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
         ok: true,
-        text: async () => JSON.stringify({ createShift: true }),
+        text: async () => JSON.stringify({ createShift: false }),
       })),
     );
 
-    await expect(fetchCreateShiftPermission('secret-one')).resolves.toBe(true);
-    expect(fetch).toHaveBeenCalledWith(
-      'https://sideshift.ai/api/v2/permissions',
-      expect.objectContaining({
-        method: 'GET',
-        headers: { 'x-sideshift-secret': 'secret-one' },
-      }),
-    );
-  });
-
-  it('throws when secret is missing', async () => {
-    await expect(fetchCreateShiftPermission('')).rejects.toThrow('missing');
+    await expect(fetchCreateShiftPermission()).resolves.toBe(false);
   });
 
   it('throws when response omits createShift', async () => {
@@ -80,6 +85,6 @@ describe('fetchCreateShiftPermission', () => {
       })),
     );
 
-    await expect(fetchCreateShiftPermission('s')).rejects.toThrow('createShift');
+    await expect(fetchCreateShiftPermission()).rejects.toThrow('createShift');
   });
 });
