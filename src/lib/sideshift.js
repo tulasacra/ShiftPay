@@ -73,6 +73,7 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
       settleCoin: paymentRequest.methodId,
       settleAmount: paymentRequest.amount,
       affiliateId: credentials.affiliateId,
+      commissionRate: 0,
     }),
     signal: options.signal,
   });
