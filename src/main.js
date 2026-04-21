@@ -547,6 +547,7 @@ function bindUi() {
 
   clearCredsButton.addEventListener('click', () => {
     clearStoredCredentials();
+    state.sideshiftCreateShiftAllowed = true;
     affiliateIdInput.value = '';
     applySecretMaskState();
     renderCredsStatus();
