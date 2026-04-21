@@ -56,6 +56,40 @@ function authHeaders(secret) {
 }
 
 /**
+ * Whether SideShift allows this account to create shifts (GET /v2/permissions).
+ * @param {string} secret
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<boolean>}
+ */
+export async function fetchCreateShiftPermission(secret, options = {}) {
+  if (!secret) {
+    throw new Error('SideShift private key is missing.');
+  }
+
+  const res = await fetch(`${SIDESHIFT_API_V2}/permissions`, {
+    method: 'GET',
+    headers: {
+      'x-sideshift-secret': secret,
+    },
+    signal: options.signal,
+  });
+
+  const text = await res.text();
+  const data = parseJsonResponse(text);
+
+  if (!res.ok) {
+    const msg = httpErrorMessage(data, text || `HTTP ${res.status}`);
+    throw new Error(msg);
+  }
+
+  if (typeof data?.createShift !== 'boolean') {
+    throw new Error('SideShift permissions response did not include createShift.');
+  }
+
+  return data.createShift;
+}
+
+/**
  * @param {{ secret: string; affiliateId: string }} credentials
  */
 export async function createFixedBchShift(paymentRequest, credentials, options = {}) {

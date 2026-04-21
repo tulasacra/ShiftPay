@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { enrichSideshiftAmountErrorMessage } from '../lib/sideshift.js';
+import { enrichSideshiftAmountErrorMessage, fetchCreateShiftPermission } from '../lib/sideshift.js';
 
 describe('enrichSideshiftAmountErrorMessage', () => {
   const btcPayment = { currencyCode: 'BTC' };
@@ -40,5 +40,46 @@ describe('enrichSideshiftAmountErrorMessage', () => {
   it('returns the original message when payment currency is unknown', () => {
     const msg = 'Amount too low. Minimum deposit amount: 1';
     expect(enrichSideshiftAmountErrorMessage(msg, null)).toBe(msg);
+  });
+});
+
+describe('fetchCreateShiftPermission', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns createShift from a 200 response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        text: async () => JSON.stringify({ createShift: true }),
+      })),
+    );
+
+    await expect(fetchCreateShiftPermission('secret-one')).resolves.toBe(true);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://sideshift.ai/api/v2/permissions',
+      expect.objectContaining({
+        method: 'GET',
+        headers: { 'x-sideshift-secret': 'secret-one' },
+      }),
+    );
+  });
+
+  it('throws when secret is missing', async () => {
+    await expect(fetchCreateShiftPermission('')).rejects.toThrow('missing');
+  });
+
+  it('throws when response omits createShift', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })),
+    );
+
+    await expect(fetchCreateShiftPermission('s')).rejects.toThrow('createShift');
   });
 });
