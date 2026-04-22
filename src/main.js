@@ -67,6 +67,14 @@ function setStatus(message, tone = 'info') {
   statusBanner.className = `status-banner ${tone}`;
 }
 
+const SIDESHIFT_BLOCKED_HELP_URL =
+  'https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai';
+
+function setBlockedStatus() {
+  statusBanner.innerHTML = `SideShift is not allowing shifts from this location. See <a href="${SIDESHIFT_BLOCKED_HELP_URL}" target="_blank" rel="noopener noreferrer">why am I blocked</a>.`;
+  statusBanner.className = 'status-banner error';
+}
+
 function applySecretMaskState() {
   if (!secretInput) {
     return;
@@ -371,10 +379,7 @@ async function resolveSideshiftPermissions() {
     const allowed = await fetchCreateShiftPermission();
     state.sideshiftCreateShiftAllowed = allowed;
     if (!allowed) {
-      setStatus(
-        'SideShift is not allowing shifts from this location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
-        'error',
-      );
+      setBlockedStatus();
     }
     return null;
   } catch (error) {
@@ -396,10 +401,7 @@ async function createShiftFromPayment() {
   }
 
   if (!state.sideshiftCreateShiftAllowed) {
-    setStatus(
-      'SideShift is not allowing shifts from this location. See https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai',
-      'error',
-    );
+    setBlockedStatus();
     return;
   }
 
