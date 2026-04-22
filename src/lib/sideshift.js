@@ -56,6 +56,33 @@ function authHeaders(secret) {
 }
 
 /**
+ * Whether SideShift allows shifts from the caller's IP (GET /v2/permissions).
+ * Endpoint is unauthenticated and keyed on client IP; no secret is involved.
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<boolean>}
+ */
+export async function fetchCreateShiftPermission(options = {}) {
+  const res = await fetch(`${SIDESHIFT_API_V2}/permissions`, {
+    method: 'GET',
+    signal: options.signal,
+  });
+
+  const text = await res.text();
+  const data = parseJsonResponse(text);
+
+  if (!res.ok) {
+    const msg = httpErrorMessage(data, text || `HTTP ${res.status}`);
+    throw new Error(msg);
+  }
+
+  if (typeof data?.createShift !== 'boolean') {
+    throw new Error('SideShift permissions response did not include createShift.');
+  }
+
+  return data.createShift;
+}
+
+/**
  * @param {{ secret: string; affiliateId: string }} credentials
  */
 export async function createFixedBchShift(paymentRequest, credentials, options = {}) {

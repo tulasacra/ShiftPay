@@ -8,7 +8,11 @@ import {
   hasStoredCredentials,
   saveCredentials,
 } from './lib/sideshiftCredentials.js';
-import { createFixedBchShift, fetchShiftStatus } from './lib/sideshift.js';
+import {
+  createFixedBchShift,
+  fetchCreateShiftPermission,
+  fetchShiftStatus,
+} from './lib/sideshift.js';
 import './styles.css';
 
 const statusBanner = document.getElementById('statusBanner');
@@ -46,6 +50,7 @@ const state = {
   paymentRequest: null,
   shiftOrder: null,
   shouldResumeScannerAfterModal: false,
+  sideshiftCreateShiftAllowed: true,
 };
 
 function escapeHtml(value) {
@@ -60,6 +65,14 @@ function escapeHtml(value) {
 function setStatus(message, tone = 'info') {
   statusBanner.textContent = message;
   statusBanner.className = `status-banner ${tone}`;
+}
+
+const SIDESHIFT_BLOCKED_HELP_URL =
+  'https://help.sideshift.ai/en/articles/2874595-why-am-i-blocked-from-using-sideshift-ai';
+
+function setBlockedStatus() {
+  statusBanner.innerHTML = `SideShift is not allowing shifts from this location. See <a href="${SIDESHIFT_BLOCKED_HELP_URL}" target="_blank" rel="noopener noreferrer">why am I blocked</a>.`;
+  statusBanner.className = 'status-banner error';
 }
 
 function applySecretMaskState() {
@@ -361,6 +374,20 @@ async function startScanner(options = {}) {
   }
 }
 
+async function resolveSideshiftPermissions() {
+  try {
+    const allowed = await fetchCreateShiftPermission();
+    state.sideshiftCreateShiftAllowed = allowed;
+    if (!allowed) {
+      setBlockedStatus();
+    }
+    return null;
+  } catch (error) {
+    state.sideshiftCreateShiftAllowed = true;
+    return error?.message || 'Request failed';
+  }
+}
+
 async function createShiftFromPayment() {
   const paymentRequest = state.paymentRequest;
   if (!paymentRequest) {
@@ -370,6 +397,11 @@ async function createShiftFromPayment() {
   const creds = getStoredCredentials();
   if (!creds) {
     setStatus('Add your SideShift API keys in Settings first.', 'warning');
+    return;
+  }
+
+  if (!state.sideshiftCreateShiftAllowed) {
+    setBlockedStatus();
     return;
   }
 
@@ -485,6 +517,13 @@ function bindUi() {
       saveCredentials(resolveSecretForSave(), affiliateIdInput.value);
       applySecretMaskState();
       renderCredsStatus();
+      if (!state.sideshiftCreateShiftAllowed) {
+        settingsDialog?.close();
+        if (state.paymentRequest) {
+          await startScanner({ preserveStatusOnReady: true });
+        }
+        return;
+      }
       setStatus('SideShift keys saved for this browser.', 'success');
       settingsDialog?.close();
       if (state.paymentRequest && hasStoredCredentials()) {
@@ -583,10 +622,27 @@ async function init() {
     }
   }
 
+  let permDetail = null;
   if (!bootstrapFailed) {
-    setStatus('Requesting camera access...', 'info');
+    permDetail = await resolveSideshiftPermissions();
   }
-  await startScanner({ preserveStatusOnReady: bootstrapFailed });
+
+  if (!bootstrapFailed && state.sideshiftCreateShiftAllowed) {
+    if (permDetail) {
+      setStatus(
+        `Could not verify SideShift permissions (${permDetail}). You can still try scanning.`,
+        'warning',
+      );
+    } else {
+      setStatus('Requesting camera access...', 'info');
+    }
+  }
+
+  const preserveStatusOnReady =
+    bootstrapFailed ||
+    state.sideshiftCreateShiftAllowed === false ||
+    permDetail !== null;
+  await startScanner({ preserveStatusOnReady });
 }
 
 void init();
