@@ -56,21 +56,14 @@ function authHeaders(secret) {
 }
 
 /**
- * Whether SideShift allows this account to create shifts (GET /v2/permissions).
- * @param {string} secret
+ * Whether SideShift allows shifts from the caller's IP (GET /v2/permissions).
+ * Endpoint is unauthenticated and keyed on client IP; no secret is involved.
  * @param {{ signal?: AbortSignal }} [options]
  * @returns {Promise<boolean>}
  */
-export async function fetchCreateShiftPermission(secret, options = {}) {
-  if (!secret) {
-    throw new Error('SideShift private key is missing.');
-  }
-
+export async function fetchCreateShiftPermission(options = {}) {
   const res = await fetch(`${SIDESHIFT_API_V2}/permissions`, {
     method: 'GET',
-    headers: {
-      'x-sideshift-secret': secret,
-    },
     signal: options.signal,
   });
 
