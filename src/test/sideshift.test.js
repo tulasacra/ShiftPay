@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { enrichSideshiftAmountErrorMessage, fetchCreateShiftPermission } from '../lib/sideshift.js';
+import {
+  enrichSideshiftAmountErrorMessage,
+  fetchCreateShiftPermission,
+  fetchShiftsBulk,
+} from '../lib/sideshift.js';
 
 describe('enrichSideshiftAmountErrorMessage', () => {
   const btcPayment = { currencyCode: 'BTC' };
@@ -86,5 +90,76 @@ describe('fetchCreateShiftPermission', () => {
     );
 
     await expect(fetchCreateShiftPermission()).rejects.toThrow('createShift');
+  });
+});
+
+describe('fetchShiftsBulk', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns [] for empty input without calling fetch', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      fetchShiftsBulk([], { secret: 'sk', affiliateId: 'a' }),
+    ).resolves.toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sends the secret header and concatenates ids', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () =>
+        JSON.stringify([
+          { id: 'a', status: 'settled' },
+          { id: 'b', status: 'waiting' },
+        ]),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await fetchShiftsBulk(['a', 'b'], { secret: 'sk', affiliateId: 'acct' });
+
+    expect(result.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://sideshift.ai/api/v2/shifts?ids=a%2Cb');
+    expect(init?.headers).toEqual({ 'x-sideshift-secret': 'sk' });
+    expect(init?.method).toBe('GET');
+  });
+
+  it('dedupes ids before requesting', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => JSON.stringify([]),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchShiftsBulk(['a', 'a', 'b'], { secret: 'sk', affiliateId: 'acct' });
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://sideshift.ai/api/v2/shifts?ids=a%2Cb');
+  });
+
+  it('throws when the secret is missing', async () => {
+    await expect(fetchShiftsBulk(['a'], { affiliateId: 'acct' })).rejects.toThrow(
+      'private key',
+    );
+  });
+
+  it('surfaces API error messages', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ error: { message: 'Unauthorized' } }),
+      })),
+    );
+
+    await expect(
+      fetchShiftsBulk(['a'], { secret: 'sk', affiliateId: 'acct' }),
+    ).rejects.toThrow('Unauthorized');
   });
 });

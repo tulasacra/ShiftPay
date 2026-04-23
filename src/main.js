@@ -12,7 +12,14 @@ import {
   createFixedBchShift,
   fetchCreateShiftPermission,
   fetchShiftStatus,
+  fetchShiftsBulk,
 } from './lib/sideshift.js';
+import {
+  appendShift,
+  clearShifts,
+  listShifts,
+  updateShift,
+} from './lib/shiftHistory.js';
 import './styles.css';
 
 const statusBanner = document.getElementById('statusBanner');
@@ -36,6 +43,13 @@ const closeSettingsButton = document.getElementById('closeSettingsButton');
 const helpButton = document.getElementById('helpButton');
 const helpDialog = document.getElementById('helpDialog');
 const closeHelpButton = document.getElementById('closeHelpButton');
+const historyButton = document.getElementById('historyButton');
+const historyDialog = document.getElementById('historyDialog');
+const closeHistoryButton = document.getElementById('closeHistoryButton');
+const historyList = document.getElementById('historyList');
+const historyStatus = document.getElementById('historyStatus');
+const refreshHistoryButton = document.getElementById('refreshHistoryButton');
+const clearHistoryButton = document.getElementById('clearHistoryButton');
 
 const SHIFT_POLL_MS = 4000;
 
@@ -116,6 +130,163 @@ function resolveSecretForSave() {
     return stored.secret;
   }
   return trimmed;
+}
+
+function formatHistoryTimestamp(value) {
+  if (!value) {
+    return '';
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    return '';
+  }
+  return d.toLocaleString();
+}
+
+function renderHistoryList() {
+  if (!historyList || !historyStatus) {
+    return;
+  }
+  const creds = getStoredCredentials();
+  if (!creds) {
+    historyList.hidden = true;
+    historyList.innerHTML = '';
+    historyStatus.textContent = 'Save your SideShift keys first to see past shifts.';
+    return;
+  }
+  const entries = listShifts(creds.affiliateId);
+  if (entries.length === 0) {
+    historyList.hidden = true;
+    historyList.innerHTML = '';
+    historyStatus.textContent = 'No shifts recorded in this browser yet.';
+    return;
+  }
+
+  historyStatus.textContent = `${entries.length} shift${entries.length === 1 ? '' : 's'} saved in this browser.`;
+  historyList.hidden = false;
+  historyList.innerHTML = entries
+    .map((entry) => {
+      const status = entry.status || 'unknown';
+      const statusClass = `history-item-status--${escapeHtml(String(status).toLowerCase())}`;
+      const settleAmount = entry.settleAmount || entry.paymentAmount || '?';
+      const settleCoin = (entry.settleCoin || entry.paymentCurrency || '').toUpperCase();
+      const depositAmount = entry.depositAmount || '?';
+      const when = formatHistoryTimestamp(entry.createdAt);
+      return `
+        <li>
+          <button type="button" class="history-item" data-shift-id="${escapeHtml(entry.id)}">
+            <span class="history-item-row">
+              <span class="history-item-amount">${escapeHtml(settleAmount)} ${escapeHtml(settleCoin)}</span>
+              <span class="history-item-status ${statusClass}">${escapeHtml(status)}</span>
+            </span>
+            <span class="history-item-meta">
+              <span>${escapeHtml(depositAmount)} BCH${when ? ` • ${escapeHtml(when)}` : ''}</span>
+              <span class="history-item-id">${escapeHtml(entry.id)}</span>
+            </span>
+          </button>
+        </li>
+      `;
+    })
+    .join('');
+}
+
+async function refreshHistoryStatuses() {
+  if (!historyStatus) {
+    return;
+  }
+  const creds = getStoredCredentials();
+  if (!creds) {
+    return;
+  }
+  const entries = listShifts(creds.affiliateId);
+  if (entries.length === 0) {
+    return;
+  }
+  historyStatus.textContent = 'Refreshing statuses…';
+  try {
+    const shifts = await fetchShiftsBulk(
+      entries.map((e) => e.id),
+      creds,
+    );
+    for (const shift of shifts) {
+      if (!shift?.id) {
+        continue;
+      }
+      updateShift(creds.affiliateId, shift.id, {
+        status: shift.status,
+        settleAmount: shift.settleAmount ?? undefined,
+        depositAmount: shift.depositAmount ?? undefined,
+        depositAddress: shift.depositAddress ?? undefined,
+        settleCoin: shift.settleCoin ?? undefined,
+        depositMemo: shift.depositMemo ?? undefined,
+      });
+    }
+    renderHistoryList();
+    historyStatus.textContent = `Updated ${shifts.length} of ${entries.length} shift${entries.length === 1 ? '' : 's'}.`;
+  } catch (error) {
+    renderHistoryList();
+    historyStatus.textContent = `Could not refresh: ${error?.message || 'request failed'}`;
+  }
+}
+
+function reopenShiftFromHistory(shiftId) {
+  const creds = getStoredCredentials();
+  if (!creds) {
+    return;
+  }
+  const entry = listShifts(creds.affiliateId).find((e) => e.id === shiftId);
+  if (!entry) {
+    return;
+  }
+
+  state.shouldResumeScannerAfterModal = false;
+  historyDialog?.close();
+  void stopScanner();
+
+  const paymentRequest = entry.paymentRequest
+    ? { ...entry.paymentRequest }
+    : {
+        currencyCode: (entry.settleCoin || '').toUpperCase(),
+        label: (entry.settleCoin || '').toUpperCase(),
+        amount: entry.settleAmount || '',
+        amountLabel: `${entry.settleAmount || ''} ${(entry.settleCoin || '').toUpperCase()}`.trim(),
+        address: entry.settleAddress || '',
+        methodId: (entry.settleCoin || '').toLowerCase(),
+        raw: entry.paymentRaw || '',
+        scheme: entry.paymentScheme || '',
+      };
+
+  state.paymentRequest = paymentRequest;
+  renderTargetDetails(paymentRequest);
+  resetShiftState();
+
+  const order = {
+    id: entry.id,
+    orderId: entry.id,
+    status: entry.status,
+    depositAddress: entry.depositAddress,
+    depositAmount: entry.depositAmount,
+    depositMemo: entry.depositMemo,
+    settleAmount: entry.settleAmount,
+    settleCoin: entry.settleCoin,
+  };
+  state.shiftOrder = order;
+  renderShiftDetails(order);
+
+  if (entry.depositAddress && entry.depositAmount) {
+    setWalletLinkState(
+      buildBchDeepLink(entry.depositAddress, entry.depositAmount, entry.depositMemo),
+    );
+  } else {
+    setWalletLinkState(null);
+  }
+
+  setStatus(`Reopened shift ${entry.id}.`, 'info');
+  state.shiftPollLastStatus = entry.status ?? null;
+  const terminal = new Set(['settled', 'expired', 'refunded']);
+  if (!terminal.has(String(entry.status || '').toLowerCase())) {
+    startShiftStatusPoll(entry.id);
+  }
 }
 
 function renderCredsStatus() {
@@ -261,6 +432,15 @@ function startShiftStatusPoll(shiftId) {
       state.shiftPollLastStatus = shift.status;
       state.shiftOrder = shift;
       renderShiftDetails(shift);
+
+      updateShift(creds.affiliateId, shiftId, {
+        status: shift.status,
+        settleAmount: shift.settleAmount ?? undefined,
+        depositAmount: shift.depositAmount ?? undefined,
+        depositAddress: shift.depositAddress ?? undefined,
+        settleCoin: shift.settleCoin ?? undefined,
+        depositMemo: shift.depositMemo ?? undefined,
+      });
 
       const st = shift.status;
       if (prev === 'waiting' && st && st !== 'waiting' && st !== 'settled') {
@@ -416,6 +596,21 @@ async function createShiftFromPayment() {
     state.shiftOrder = order;
     renderShiftDetails(order);
 
+    if (order.id) {
+      appendShift(creds.affiliateId, {
+        id: order.id,
+        createdAt: order.createdAt || new Date().toISOString(),
+        status: order.status,
+        depositAddress: order.depositAddress,
+        depositAmount: order.depositAmount,
+        depositMemo: order.depositMemo,
+        settleAddress: order.settleAddress || paymentRequest.address,
+        settleAmount: order.settleAmount || paymentRequest.amount,
+        settleCoin: order.settleCoin || paymentRequest.methodId,
+        paymentRequest: { ...paymentRequest },
+      });
+    }
+
     if (!order.depositAddress || !order.depositAmount) {
       setStatus('SideShift did not return BCH deposit details.', 'warning');
       return;
@@ -560,6 +755,7 @@ function bindUi() {
 
   bindModalWithScannerPause(settingsDialog);
   bindModalWithScannerPause(helpDialog);
+  bindModalWithScannerPause(historyDialog);
 
   settingsButton?.addEventListener('click', async () => {
     await openModalWithScannerPause(settingsDialog);
@@ -569,12 +765,46 @@ function bindUi() {
     await openModalWithScannerPause(helpDialog);
   });
 
+  historyButton?.addEventListener('click', async () => {
+    renderHistoryList();
+    await openModalWithScannerPause(historyDialog);
+    void refreshHistoryStatuses();
+  });
+
   closeSettingsButton?.addEventListener('click', () => {
     settingsDialog?.close();
   });
 
   closeHelpButton?.addEventListener('click', () => {
     helpDialog?.close();
+  });
+
+  closeHistoryButton?.addEventListener('click', () => {
+    historyDialog?.close();
+  });
+
+  refreshHistoryButton?.addEventListener('click', () => {
+    void refreshHistoryStatuses();
+  });
+
+  clearHistoryButton?.addEventListener('click', () => {
+    const creds = getStoredCredentials();
+    if (!creds) {
+      return;
+    }
+    clearShifts(creds.affiliateId);
+    renderHistoryList();
+  });
+
+  historyList?.addEventListener('click', (event) => {
+    const button = event.target instanceof Element ? event.target.closest('.history-item') : null;
+    if (!button) {
+      return;
+    }
+    const shiftId = button.getAttribute('data-shift-id');
+    if (shiftId) {
+      reopenShiftFromHistory(shiftId);
+    }
   });
 
   walletLink.addEventListener('click', (event) => {
