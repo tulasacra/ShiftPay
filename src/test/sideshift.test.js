@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { enrichSideshiftAmountErrorMessage, fetchCreateShiftPermission } from '../lib/sideshift.js';
+import {
+  enrichSideshiftAmountErrorMessage,
+  fetchCreateShiftPermission,
+  fetchShiftsBulk,
+} from '../lib/sideshift.js';
 
 describe('enrichSideshiftAmountErrorMessage', () => {
   const btcPayment = { currencyCode: 'BTC' };
@@ -86,5 +90,66 @@ describe('fetchCreateShiftPermission', () => {
     );
 
     await expect(fetchCreateShiftPermission()).rejects.toThrow('createShift');
+  });
+});
+
+describe('fetchShiftsBulk', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns [] for empty input without calling fetch', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchShiftsBulk([])).resolves.toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('concatenates ids and does not send a secret header', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () =>
+        JSON.stringify([
+          { id: 'a', status: 'settled' },
+          { id: 'b', status: 'waiting' },
+        ]),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await fetchShiftsBulk(['a', 'b']);
+
+    expect(result.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://sideshift.ai/api/v2/shifts?ids=a%2Cb');
+    expect(init?.method).toBe('GET');
+    expect(init?.headers).toBeUndefined();
+  });
+
+  it('dedupes ids before requesting', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => JSON.stringify([]),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchShiftsBulk(['a', 'a', 'b']);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://sideshift.ai/api/v2/shifts?ids=a%2Cb');
+  });
+
+  it('surfaces API error messages', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 404,
+        text: async () => JSON.stringify({ error: { message: 'Order not found' } }),
+      })),
+    );
+
+    await expect(fetchShiftsBulk(['a'])).rejects.toThrow('Order not found');
   });
 });

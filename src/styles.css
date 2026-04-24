@@ -461,6 +461,108 @@ h1 {
   line-height: 1.5;
 }
 
+.history-list {
+  list-style: none;
+  margin: var(--page-inline) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.history-list[hidden] {
+  display: none;
+}
+
+.history-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.55);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.history-item:hover,
+.history-item:focus-visible {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(15, 23, 42, 0.85);
+  outline: none;
+}
+
+.history-item-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.history-item-amount {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.history-item-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.history-item-status--settled {
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.history-item-status--expired,
+.history-item-status--refunded,
+.history-item-status--refund {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.history-item-status--waiting,
+.history-item-status--pending,
+.history-item-status--processing,
+.history-item-status--settling,
+.history-item-status--review,
+.history-item-status--multiple {
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.history-item-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.history-item-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 840px) {
   :root {
     --page-inline: 0.5rem;

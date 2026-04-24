@@ -35,6 +35,15 @@
               </button>
               <button
                 type="button"
+                id="historyButton"
+                class="secondary-button"
+                aria-haspopup="dialog"
+                aria-controls="historyDialog"
+              >
+                History
+              </button>
+              <button
+                type="button"
                 id="settingsButton"
                 class="secondary-button"
                 aria-haspopup="dialog"
@@ -65,6 +74,28 @@
                 browser; you can replace the keys in Settings or clear them anytime (keys stay on this device
                 only).
               </p>
+            </div>
+          </article>
+        </dialog>
+
+        <dialog id="historyDialog" class="settings-dialog" aria-labelledby="historyDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="historyDialogTitle">Shift history</h2>
+              <button type="button" id="closeHistoryButton" class="secondary-button">Done</button>
+            </div>
+            <p class="muted creds-lede">
+              Stored in this browser only, grouped per SideShift account ID. Tap a shift to re-open it.
+            </p>
+            <p id="historyStatus" class="creds-status muted" role="status"></p>
+            <ul id="historyList" class="history-list" hidden></ul>
+            <div class="button-stack">
+              <button id="refreshHistoryButton" class="secondary-button" type="button">
+                Refresh statuses
+              </button>
+              <button id="clearHistoryButton" class="secondary-button" type="button">
+                Clear history
+              </button>
             </div>
           </article>
         </dialog>
@@ -156,6 +187,6 @@
       </main>
     </div>
 
-    <script type="module" src="../src/main.js"></script>
+    <script type="module" src="./entry.js"></script>
   </body>
 </html>
