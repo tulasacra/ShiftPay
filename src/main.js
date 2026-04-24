@@ -418,26 +418,23 @@ function startShiftStatusPoll(shiftId) {
     state.shiftPollTimer = null;
 
     try {
-      const creds = getStoredCredentials();
-      if (!creds) {
-        schedule(SHIFT_POLL_MS * 2);
-        return;
-      }
-
-      const shift = await fetchShiftStatus(shiftId, creds);
+      const shift = await fetchShiftStatus(shiftId);
       const prev = state.shiftPollLastStatus;
       state.shiftPollLastStatus = shift.status;
       state.shiftOrder = shift;
       renderShiftDetails(shift);
 
-      updateShift(creds.affiliateId, shiftId, {
-        status: shift.status,
-        settleAmount: shift.settleAmount ?? undefined,
-        depositAmount: shift.depositAmount ?? undefined,
-        depositAddress: shift.depositAddress ?? undefined,
-        settleCoin: shift.settleCoin ?? undefined,
-        depositMemo: shift.depositMemo ?? undefined,
-      });
+      const creds = getStoredCredentials();
+      if (creds) {
+        updateShift(creds.affiliateId, shiftId, {
+          status: shift.status,
+          settleAmount: shift.settleAmount ?? undefined,
+          depositAmount: shift.depositAmount ?? undefined,
+          depositAddress: shift.depositAddress ?? undefined,
+          settleCoin: shift.settleCoin ?? undefined,
+          depositMemo: shift.depositMemo ?? undefined,
+        });
+      }
 
       const st = shift.status;
       if (prev === 'waiting' && st && st !== 'waiting' && st !== 'settled') {

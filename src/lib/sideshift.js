@@ -183,18 +183,11 @@ export async function fetchShiftsBulk(shiftIds, options = {}) {
 }
 
 /**
- * @param {{ secret: string; affiliateId: string }} credentials
+ * Unauthenticated — any caller who knows the shift id can read it.
  */
-export async function fetchShiftStatus(shiftId, credentials, options = {}) {
-  if (!credentials?.secret) {
-    throw new Error('SideShift private key is missing.');
-  }
-
+export async function fetchShiftStatus(shiftId, options = {}) {
   const res = await fetch(`${SIDESHIFT_API_V2}/shifts/${encodeURIComponent(shiftId)}`, {
     method: 'GET',
-    headers: {
-      'x-sideshift-secret': credentials.secret,
-    },
     signal: options.signal,
   });
 
