@@ -144,16 +144,12 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
 
 /**
  * Bulk shift fetch via GET /v2/shifts?ids=... (see bulkshifts docs).
+ * Unauthenticated — any caller who knows the shift id can read it.
  * Returns an array of normalized shift objects, in the same order SideShift returns them.
  * Chunks requests so the URL stays reasonable for large histories.
  * @param {string[]} shiftIds
- * @param {{ secret: string; affiliateId: string }} credentials
  */
-export async function fetchShiftsBulk(shiftIds, credentials, options = {}) {
-  if (!credentials?.secret) {
-    throw new Error('SideShift private key is missing.');
-  }
-
+export async function fetchShiftsBulk(shiftIds, options = {}) {
   const unique = Array.from(new Set((shiftIds || []).filter((id) => typeof id === 'string' && id)));
   if (unique.length === 0) {
     return [];
@@ -166,7 +162,6 @@ export async function fetchShiftsBulk(shiftIds, credentials, options = {}) {
     const url = `${SIDESHIFT_API_V2}/shifts?ids=${encodeURIComponent(chunk.join(','))}`;
     const res = await fetch(url, {
       method: 'GET',
-      headers: { 'x-sideshift-secret': credentials.secret },
       signal: options.signal,
     });
 

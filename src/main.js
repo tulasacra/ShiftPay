@@ -204,10 +204,7 @@ async function refreshHistoryStatuses() {
   }
   historyStatus.textContent = 'Refreshing statuses…';
   try {
-    const shifts = await fetchShiftsBulk(
-      entries.map((e) => e.id),
-      creds,
-    );
+    const shifts = await fetchShiftsBulk(entries.map((e) => e.id));
     for (const shift of shifts) {
       if (!shift?.id) {
         continue;
