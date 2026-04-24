@@ -8,6 +8,10 @@ export function isTerminalStatus(status) {
   return TERMINAL_SHIFT_STATUSES.has(normalizeStatus(status));
 }
 
+export function isWalletPaymentStatus(status) {
+  return normalizeStatus(status) === 'waiting';
+}
+
 export function shouldShowDepositDetected(previousStatus, nextStatus) {
   const previous = normalizeStatus(previousStatus);
   const next = normalizeStatus(nextStatus);

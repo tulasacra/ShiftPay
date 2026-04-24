@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isWalletPaymentStatus,
   isTerminalStatus,
   shouldShowDepositDetected,
   terminalShiftStatusMessage,
@@ -17,6 +18,15 @@ describe('shift status helpers', () => {
     expect(isTerminalStatus('waiting')).toBe(false);
     expect(isTerminalStatus('pending')).toBe(false);
     expect(isTerminalStatus('')).toBe(false);
+  });
+
+  it('only allows wallet payment while a shift is waiting', () => {
+    expect(isWalletPaymentStatus('waiting')).toBe(true);
+    expect(isWalletPaymentStatus('confirming')).toBe(false);
+    expect(isWalletPaymentStatus('settled')).toBe(false);
+    expect(isWalletPaymentStatus('expired')).toBe(false);
+    expect(isWalletPaymentStatus('refunded')).toBe(false);
+    expect(isWalletPaymentStatus('')).toBe(false);
   });
 
   it('only shows deposit detected for waiting to non-terminal progress', () => {
