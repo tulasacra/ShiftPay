@@ -53,6 +53,12 @@ const clearHistoryButton = document.getElementById('clearHistoryButton');
 
 const SHIFT_POLL_MS = 4000;
 
+const TERMINAL_SHIFT_STATUSES = new Set(['settled', 'expired', 'refunded']);
+
+function isTerminalStatus(status) {
+  return TERMINAL_SHIFT_STATUSES.has(String(status || '').toLowerCase());
+}
+
 const SECRET_MASK = '*'.repeat(24);
 
 const state = {
@@ -202,9 +208,14 @@ async function refreshHistoryStatuses() {
   if (entries.length === 0) {
     return;
   }
+  const stale = entries.filter((e) => !isTerminalStatus(e.status));
+  if (stale.length === 0) {
+    historyStatus.textContent = `${entries.length} shift${entries.length === 1 ? '' : 's'} saved in this browser. All final.`;
+    return;
+  }
   historyStatus.textContent = 'Refreshing statuses…';
   try {
-    const shifts = await fetchShiftsBulk(entries.map((e) => e.id));
+    const shifts = await fetchShiftsBulk(stale.map((e) => e.id));
     for (const shift of shifts) {
       if (!shift?.id) {
         continue;
@@ -219,7 +230,7 @@ async function refreshHistoryStatuses() {
       });
     }
     renderHistoryList();
-    historyStatus.textContent = `Updated ${shifts.length} of ${entries.length} shift${entries.length === 1 ? '' : 's'}.`;
+    historyStatus.textContent = `Updated ${shifts.length} of ${stale.length} non-final shift${stale.length === 1 ? '' : 's'}.`;
   } catch (error) {
     renderHistoryList();
     historyStatus.textContent = `Could not refresh: ${error?.message || 'request failed'}`;
@@ -280,8 +291,7 @@ function reopenShiftFromHistory(shiftId) {
 
   setStatus(`Reopened shift ${entry.id}.`, 'info');
   state.shiftPollLastStatus = entry.status ?? null;
-  const terminal = new Set(['settled', 'expired', 'refunded']);
-  if (!terminal.has(String(entry.status || '').toLowerCase())) {
+  if (!isTerminalStatus(entry.status)) {
     startShiftStatusPoll(entry.id);
   }
 }
