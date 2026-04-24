@@ -20,6 +20,11 @@ import {
   listShifts,
   updateShift,
 } from './lib/shiftHistory.js';
+import {
+  isTerminalStatus,
+  shouldShowDepositDetected,
+  terminalShiftStatusMessage,
+} from './lib/shiftStatus.js';
 import './styles.css';
 
 const statusBanner = document.getElementById('statusBanner');
@@ -52,12 +57,6 @@ const refreshHistoryButton = document.getElementById('refreshHistoryButton');
 const clearHistoryButton = document.getElementById('clearHistoryButton');
 
 const SHIFT_POLL_MS = 4000;
-
-const TERMINAL_SHIFT_STATUSES = new Set(['settled', 'expired', 'refunded']);
-
-function isTerminalStatus(status) {
-  return TERMINAL_SHIFT_STATUSES.has(String(status || '').toLowerCase());
-}
 
 const SECRET_MASK = '*'.repeat(24);
 
@@ -447,12 +446,13 @@ function startShiftStatusPoll(shiftId) {
       }
 
       const st = shift.status;
-      if (prev === 'waiting' && st && st !== 'waiting' && st !== 'settled') {
+      if (shouldShowDepositDetected(prev, st)) {
         setStatus('SideShift detected the BCH deposit. Waiting for settlement.', 'success');
       }
 
-      if (st === 'settled') {
-        setStatus('SideShift marked the shift as settled.', 'success');
+      const terminalMessage = terminalShiftStatusMessage(st);
+      if (terminalMessage) {
+        setStatus(terminalMessage.message, terminalMessage.tone);
         return;
       }
 
