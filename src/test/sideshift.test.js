@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  createFixedBchShift,
   enrichSideshiftAmountErrorMessage,
   fetchCreateShiftPermission,
   fetchShiftsBulk,
@@ -90,6 +91,46 @@ describe('fetchCreateShiftPermission', () => {
     );
 
     await expect(fetchCreateShiftPermission()).rejects.toThrow('createShift');
+  });
+});
+
+describe('createFixedBchShift', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends settleNetwork when the payment request targets a specific network', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ id: 'quote-1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ id: 'shift-1', depositAddress: 'bitcoincash:q', depositAmount: '0.1' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createFixedBchShift(
+      {
+        address: 'el1qqd0exampleliquidaddress',
+        amount: '0.42',
+        methodId: 'btc',
+        networkId: 'liquid',
+      },
+      { secret: 'secret', affiliateId: 'account' },
+    );
+
+    const [, quoteInit] = fetchMock.mock.calls[0];
+    expect(JSON.parse(quoteInit.body)).toEqual({
+      depositCoin: 'bch',
+      settleCoin: 'btc',
+      settleNetwork: 'liquid',
+      settleAmount: '0.42',
+      affiliateId: 'account',
+      commissionRate: 0,
+    });
   });
 });
 

@@ -92,16 +92,21 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
     );
   }
 
+  const quoteBody = {
+    depositCoin: 'bch',
+    settleCoin: paymentRequest.methodId,
+    settleAmount: paymentRequest.amount,
+    affiliateId: credentials.affiliateId,
+    commissionRate: 0,
+  };
+  if (paymentRequest.networkId) {
+    quoteBody.settleNetwork = paymentRequest.networkId;
+  }
+
   const quoteRes = await fetch(`${SIDESHIFT_API_V2}/quotes`, {
     method: 'POST',
     headers: authHeaders(credentials.secret),
-    body: JSON.stringify({
-      depositCoin: 'bch',
-      settleCoin: paymentRequest.methodId,
-      settleAmount: paymentRequest.amount,
-      affiliateId: credentials.affiliateId,
-      commissionRate: 0,
-    }),
+    body: JSON.stringify(quoteBody),
     signal: options.signal,
   });
 

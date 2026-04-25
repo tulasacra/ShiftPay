@@ -2,29 +2,66 @@ const SUPPORTED_SCHEMES = Object.freeze({
   bitcoin: {
     currencyCode: 'BTC',
     methodId: 'btc',
+    networkId: 'bitcoin',
     label: 'Bitcoin',
   },
   litecoin: {
     currencyCode: 'LTC',
     methodId: 'ltc',
+    networkId: 'litecoin',
     label: 'Litecoin',
   },
   dogecoin: {
     currencyCode: 'DOGE',
     methodId: 'doge',
+    networkId: 'dogecoin',
     label: 'Dogecoin',
   },
   dash: {
     currencyCode: 'DASH',
     methodId: 'dash',
+    networkId: 'dash',
     label: 'Dash',
   },
-  zcash: {
-    currencyCode: 'ZEC',
-    methodId: 'zec',
-    label: 'Zcash',
+  liquidnetwork: {
+    currencyCode: 'BTC',
+    methodId: 'btc',
+    networkId: 'liquid',
+    label: 'Liquid Bitcoin',
+  },
+  liquid: {
+    currencyCode: 'BTC',
+    methodId: 'btc',
+    networkId: 'liquid',
+    label: 'Liquid Bitcoin',
+  },
+  ecash: {
+    currencyCode: 'XEC',
+    methodId: 'xec',
+    networkId: 'xec',
+    label: 'eCash',
+  },
+  xec: {
+    currencyCode: 'XEC',
+    methodId: 'xec',
+    networkId: 'xec',
+    label: 'eCash',
+  },
+  cardano: {
+    currencyCode: 'ADA',
+    methodId: 'ada',
+    networkId: 'cardano',
+    label: 'Cardano',
+  },
+  'web+cardano': {
+    currencyCode: 'ADA',
+    methodId: 'ada',
+    networkId: 'cardano',
+    label: 'Cardano',
   },
 });
+
+const SUPPORTED_SCHEME_LABEL = 'bitcoin, litecoin, dogecoin, dash, liquidnetwork/liquid, ecash/xec, cardano/web+cardano';
 
 const DECIMAL_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
 
@@ -72,7 +109,7 @@ function requireSupportedScheme(scheme) {
 
   if (!config) {
     throw new Error(
-      'Unsupported payment URI. Supported schemes: bitcoin, litecoin, dogecoin, dash, zcash.',
+      `Unsupported payment URI. Supported schemes: ${SUPPORTED_SCHEME_LABEL}.`,
     );
   }
 
@@ -115,6 +152,7 @@ export function parsePaymentCode(rawValue) {
     currencyCode: config.currencyCode,
     label: config.label,
     methodId: config.methodId,
+    networkId: config.networkId,
   };
 }
 

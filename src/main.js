@@ -260,6 +260,7 @@ function reopenShiftFromHistory(shiftId) {
         amountLabel: `${entry.settleAmount || ''} ${(entry.settleCoin || '').toUpperCase()}`.trim(),
         address: entry.settleAddress || '',
         methodId: (entry.settleCoin || '').toLowerCase(),
+        networkId: entry.settleNetwork || '',
         raw: entry.paymentRaw || '',
         scheme: entry.paymentScheme || '',
       };
@@ -619,6 +620,7 @@ async function createShiftFromPayment() {
         settleAddress: order.settleAddress || paymentRequest.address,
         settleAmount: order.settleAmount || paymentRequest.amount,
         settleCoin: order.settleCoin || paymentRequest.methodId,
+        settleNetwork: order.settleNetwork || paymentRequest.networkId,
         paymentRequest: { ...paymentRequest },
       });
     }

@@ -13,6 +13,52 @@ describe('parsePaymentCode', () => {
       currencyCode: 'BTC',
       label: 'Bitcoin',
       methodId: 'btc',
+      networkId: 'bitcoin',
+    });
+  });
+
+  it.each([
+    [
+      'liquidnetwork:el1qqd0exampleliquidaddress?amount=0.42',
+      {
+        scheme: 'liquidnetwork',
+        address: 'el1qqd0exampleliquidaddress',
+        amountLabel: '0.42 BTC',
+        currencyCode: 'BTC',
+        label: 'Liquid Bitcoin',
+        methodId: 'btc',
+        networkId: 'liquid',
+      },
+    ],
+    [
+      'ecash:qq123exampleaddress?amount=2500',
+      {
+        scheme: 'ecash',
+        address: 'qq123exampleaddress',
+        amountLabel: '2500 XEC',
+        currencyCode: 'XEC',
+        label: 'eCash',
+        methodId: 'xec',
+        networkId: 'xec',
+      },
+    ],
+    [
+      'cardano:addr1qx2exampleaddress?amount=12.5',
+      {
+        scheme: 'cardano',
+        address: 'addr1qx2exampleaddress',
+        amountLabel: '12.5 ADA',
+        currencyCode: 'ADA',
+        label: 'Cardano',
+        methodId: 'ada',
+        networkId: 'cardano',
+      },
+    ],
+  ])('parses a %s payment request', (uri, expected) => {
+    expect(parsePaymentCode(uri)).toEqual({
+      raw: uri,
+      amount: uri.match(/amount=([^&]+)/)[1],
+      ...expected,
     });
   });
 
@@ -20,6 +66,10 @@ describe('parsePaymentCode', () => {
     expect(() => parsePaymentCode('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toThrow(
       'The payment code is missing an amount.',
     );
+  });
+
+  it('rejects zcash payment requests', () => {
+    expect(() => parsePaymentCode('zcash:t1exampleaddress?amount=1')).toThrow('Unsupported payment URI.');
   });
 
   it('rejects unsupported schemes', () => {
