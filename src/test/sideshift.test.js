@@ -132,6 +132,39 @@ describe('createFixedBchShift', () => {
       commissionRate: 0,
     });
   });
+
+  it('sends settleMemo when the payment request includes a memo or destination tag', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ id: 'quote-1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ id: 'shift-1', depositAddress: 'bitcoincash:q', depositAmount: '0.1' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createFixedBchShift(
+      {
+        address: 'rExampleXrpAddress',
+        amount: '30',
+        methodId: 'xrp',
+        networkId: 'ripple',
+        settleMemo: '12345',
+      },
+      { secret: 'secret', affiliateId: 'account' },
+    );
+
+    const [, shiftInit] = fetchMock.mock.calls[1];
+    expect(JSON.parse(shiftInit.body)).toEqual({
+      quoteId: 'quote-1',
+      settleAddress: 'rExampleXrpAddress',
+      settleMemo: '12345',
+      affiliateId: 'account',
+    });
+  });
 });
 
 describe('fetchShiftsBulk', () => {

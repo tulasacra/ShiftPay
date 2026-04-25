@@ -128,6 +128,9 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
     settleAddress: paymentRequest.address,
     affiliateId: credentials.affiliateId,
   };
+  if (paymentRequest.settleMemo) {
+    shiftBody.settleMemo = paymentRequest.settleMemo;
+  }
 
   const shiftRes = await fetch(`${SIDESHIFT_API_V2}/shifts/fixed`, {
     method: 'POST',

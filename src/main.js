@@ -261,6 +261,7 @@ function reopenShiftFromHistory(shiftId) {
         address: entry.settleAddress || '',
         methodId: (entry.settleCoin || '').toLowerCase(),
         networkId: entry.settleNetwork || '',
+        settleMemo: entry.settleMemo || '',
         raw: entry.paymentRaw || '',
         scheme: entry.paymentScheme || '',
       };
@@ -355,6 +356,14 @@ function renderTargetDetails(paymentRequest) {
       <dt>Recipient</dt>
       <dd>${escapeHtml(paymentRequest.address)}</dd>
     </div>
+    ${
+      paymentRequest.settleMemo
+        ? `<div>
+      <dt>Memo/tag</dt>
+      <dd>${escapeHtml(paymentRequest.settleMemo)}</dd>
+    </div>`
+        : ''
+    }
     <div>
       <dt>URI</dt>
       <dd>${escapeHtml(paymentRequest.raw)}</dd>
@@ -621,6 +630,7 @@ async function createShiftFromPayment() {
         settleAmount: order.settleAmount || paymentRequest.amount,
         settleCoin: order.settleCoin || paymentRequest.methodId,
         settleNetwork: order.settleNetwork || paymentRequest.networkId,
+        settleMemo: order.settleMemo || paymentRequest.settleMemo,
         paymentRequest: { ...paymentRequest },
       });
     }
