@@ -59,9 +59,75 @@ const SUPPORTED_SCHEMES = Object.freeze({
     networkId: 'cardano',
     label: 'Cardano',
   },
+  algorand: {
+    currencyCode: 'ALGO',
+    methodId: 'algo',
+    networkId: 'algorand',
+    label: 'Algorand',
+  },
+  algo: {
+    currencyCode: 'ALGO',
+    methodId: 'algo',
+    networkId: 'algorand',
+    label: 'Algorand',
+  },
+  polkadot: {
+    currencyCode: 'DOT',
+    methodId: 'dot',
+    networkId: 'polkadot',
+    label: 'Polkadot',
+  },
+  dot: {
+    currencyCode: 'DOT',
+    methodId: 'dot',
+    networkId: 'polkadot',
+    label: 'Polkadot',
+  },
+  ripple: {
+    currencyCode: 'XRP',
+    methodId: 'xrp',
+    networkId: 'ripple',
+    label: 'XRP',
+  },
+  xrp: {
+    currencyCode: 'XRP',
+    methodId: 'xrp',
+    networkId: 'ripple',
+    label: 'XRP',
+  },
+  xrpl: {
+    currencyCode: 'XRP',
+    methodId: 'xrp',
+    networkId: 'ripple',
+    label: 'XRP',
+  },
+  solana: {
+    currencyCode: 'SOL',
+    methodId: 'sol',
+    networkId: 'solana',
+    label: 'Solana',
+  },
+  sol: {
+    currencyCode: 'SOL',
+    methodId: 'sol',
+    networkId: 'solana',
+    label: 'Solana',
+  },
+  tron: {
+    currencyCode: 'TRX',
+    methodId: 'trx',
+    networkId: 'tron',
+    label: 'Tron',
+  },
+  trx: {
+    currencyCode: 'TRX',
+    methodId: 'trx',
+    networkId: 'tron',
+    label: 'Tron',
+  },
 });
 
-const SUPPORTED_SCHEME_LABEL = 'bitcoin, litecoin, dogecoin, dash, liquidnetwork/liquid, ecash/xec, cardano/web+cardano';
+const SUPPORTED_SCHEME_LABEL = 'bitcoin, litecoin, dogecoin, dash, liquidnetwork/liquid, ecash/xec, cardano/web+cardano, algorand/algo, polkadot/dot, ripple/xrp/xrpl, solana/sol, tron/trx';
 
 const DECIMAL_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
 

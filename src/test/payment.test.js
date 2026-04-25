@@ -54,6 +54,66 @@ describe('parsePaymentCode', () => {
         networkId: 'cardano',
       },
     ],
+    [
+      'algorand:ALGOEXAMPLEADDRESS?amount=1.5',
+      {
+        scheme: 'algorand',
+        address: 'ALGOEXAMPLEADDRESS',
+        amountLabel: '1.5 ALGO',
+        currencyCode: 'ALGO',
+        label: 'Algorand',
+        methodId: 'algo',
+        networkId: 'algorand',
+      },
+    ],
+    [
+      'polkadot:1DOTexampleaddress?amount=2.25',
+      {
+        scheme: 'polkadot',
+        address: '1DOTexampleaddress',
+        amountLabel: '2.25 DOT',
+        currencyCode: 'DOT',
+        label: 'Polkadot',
+        methodId: 'dot',
+        networkId: 'polkadot',
+      },
+    ],
+    [
+      'ripple:rExampleXrpAddress?amount=30',
+      {
+        scheme: 'ripple',
+        address: 'rExampleXrpAddress',
+        amountLabel: '30 XRP',
+        currencyCode: 'XRP',
+        label: 'XRP',
+        methodId: 'xrp',
+        networkId: 'ripple',
+      },
+    ],
+    [
+      'solana:9xQeWvG816bUx9EPexample?amount=0.75',
+      {
+        scheme: 'solana',
+        address: '9xQeWvG816bUx9EPexample',
+        amountLabel: '0.75 SOL',
+        currencyCode: 'SOL',
+        label: 'Solana',
+        methodId: 'sol',
+        networkId: 'solana',
+      },
+    ],
+    [
+      'tron:TExampleTronAddress?amount=15',
+      {
+        scheme: 'tron',
+        address: 'TExampleTronAddress',
+        amountLabel: '15 TRX',
+        currencyCode: 'TRX',
+        label: 'Tron',
+        methodId: 'trx',
+        networkId: 'tron',
+      },
+    ],
   ])('parses a %s payment request', (uri, expected) => {
     expect(parsePaymentCode(uri)).toEqual({
       raw: uri,

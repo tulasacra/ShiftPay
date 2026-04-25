@@ -34,4 +34,4 @@ Without that, GitHub blocks the deploy job for protected environments. Note: Pag
 ## Notes
 
 - Treat stored keys like cash: anyone with access to this device or browser profile can use them. Users should **clear keys** on shared machines.
-- Supported payment QR schemes in this build: `bitcoin:`, `litecoin:`, `dogecoin:`, `dash:`, `liquidnetwork:`, `liquid:`, `ecash:`, `xec:`, `cardano:`, and `web+cardano:`.
+- Supported payment QR schemes in this build: `bitcoin:`, `litecoin:`, `dogecoin:`, `dash:`, `liquidnetwork:`, `liquid:`, `ecash:`, `xec:`, `cardano:`, `web+cardano:`, `algorand:`, `algo:`, `polkadot:`, `dot:`, `ripple:`, `xrp:`, `xrpl:`, `solana:`, `sol:`, `tron:`, and `trx:`.
