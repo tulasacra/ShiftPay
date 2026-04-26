@@ -1,6 +1,6 @@
 import QrScanner from 'qr-scanner';
 
-import { buildBchDeepLink, parsePaymentCode } from './lib/payment.js';
+import { SUPPORTED_SCHEME_LABEL, buildBchDeepLink, parsePaymentCode } from './lib/payment.js';
 import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
   clearStoredCredentials,
@@ -49,6 +49,7 @@ const closeSettingsButton = document.getElementById('closeSettingsButton');
 const helpButton = document.getElementById('helpButton');
 const helpDialog = document.getElementById('helpDialog');
 const closeHelpButton = document.getElementById('closeHelpButton');
+const supportedSchemesLabel = document.getElementById('supportedSchemesLabel');
 const historyButton = document.getElementById('historyButton');
 const historyDialog = document.getElementById('historyDialog');
 const closeHistoryButton = document.getElementById('closeHistoryButton');
@@ -853,6 +854,9 @@ function bindUi() {
 renderTargetDetails(null);
 renderShiftDetails(null);
 setWalletLinkState(null);
+if (supportedSchemesLabel) {
+  supportedSchemesLabel.textContent = SUPPORTED_SCHEME_LABEL;
+}
 renderCredsStatus();
 const existingCreds = getStoredCredentials();
 if (existingCreds && affiliateIdInput) {
