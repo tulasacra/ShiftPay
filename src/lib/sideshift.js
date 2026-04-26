@@ -50,8 +50,15 @@ export function enrichSideshiftAmountErrorMessage(message, paymentRequest, optio
 
   const s = String(message).trim();
 
-  const depositLow = /^(Amount too low\. Minimum deposit amount:\s*)([\d.eE+-]+)(?:\s*BCH)?\.?\s*$/i;
-  const depositHigh = /^(Amount too high\. Maximum deposit amount:\s*)([\d.eE+-]+)(?:\s*BCH)?\.?\s*$/i;
+  const amountPattern = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)';
+  const depositLow = new RegExp(
+    `^(Amount too low\\. Minimum deposit amount:\\s*)${amountPattern}(?:\\s*BCH)?\\.?\\s*$`,
+    'i',
+  );
+  const depositHigh = new RegExp(
+    `^(Amount too high\\. Maximum deposit amount:\\s*)${amountPattern}(?:\\s*BCH)?\\.?\\s*$`,
+    'i',
+  );
 
   const lowMatch = s.match(depositLow);
   if (lowMatch) {
