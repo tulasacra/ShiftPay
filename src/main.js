@@ -380,6 +380,13 @@ function renderShiftDetails(order) {
     return;
   }
 
+  const orderId = order.id || order.orderId;
+  const orderDd =
+    orderId != null && orderId !== ''
+      ? `<a href="https://sideshift.ai/orders/${encodeURIComponent(
+          String(orderId),
+        )}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(orderId))}</a>`
+      : escapeHtml('Pending');
   shiftDetails.className = 'detail-list';
   shiftDetails.innerHTML = `
     <div>
@@ -398,7 +405,7 @@ function renderShiftDetails(order) {
     </div>
     <div>
       <dt>Order</dt>
-      <dd>${escapeHtml(order.id || order.orderId || 'Pending')}</dd>
+      <dd>${orderDd}</dd>
     </div>
     ${
       order.depositMemo
