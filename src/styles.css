@@ -378,6 +378,10 @@ h1 {
   word-break: break-word;
 }
 
+.detail-list a.detail-list__order-link {
+  text-decoration: underline;
+}
+
 .detail-list--placeholder dd {
   color: #cbd5e1;
 }

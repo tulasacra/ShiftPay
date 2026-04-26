@@ -383,7 +383,7 @@ function renderShiftDetails(order) {
   const orderId = order.id || order.orderId;
   const orderDd =
     orderId != null && orderId !== ''
-      ? `<a href="https://sideshift.ai/orders/${encodeURIComponent(
+      ? `<a class="detail-list__order-link" href="https://sideshift.ai/orders/${encodeURIComponent(
           String(orderId),
         )}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(orderId))}</a>`
       : escapeHtml('Pending');
