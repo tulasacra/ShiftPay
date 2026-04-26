@@ -278,4 +278,4 @@ export function buildBchDeepLink(address, amount, memo) {
   return `bitcoincash:${normalizedAddress}?${params.toString()}`;
 }
 
-export { SUPPORTED_SCHEMES };
+export { SUPPORTED_SCHEMES, SUPPORTED_SCHEME_LABEL };
