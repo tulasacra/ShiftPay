@@ -1,4 +1,5 @@
 const SIDESHIFT_API_V2 = 'https://sideshift.ai/api/v2';
+const BCH_USD_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash&vs_currencies=usd';
 
 function parseJsonResponse(text) {
   try {
@@ -24,28 +25,67 @@ function httpErrorMessage(data, fallback) {
   return fallback;
 }
 
+function formatBchUsdEstimate(bchAmount, bchUsdRate) {
+  const bch = Number(bchAmount);
+  const rate = Number(bchUsdRate);
+  if (!Number.isFinite(bch) || bch <= 0 || !Number.isFinite(rate) || rate <= 0) {
+    return null;
+  }
+
+  const usd = bch * rate;
+  if (usd > 0 && usd < 0.01) {
+    return '<0.01';
+  }
+  return usd.toFixed(2);
+}
+
 /**
  * SideShift min/max deposit errors often end with a bare number; fixed BCH→* quotes use BCH as deposit.
  * Settle-side errors refer to the scanned payment amount (paymentRequest currency).
  */
-export function enrichSideshiftAmountErrorMessage(message, paymentRequest) {
+export function enrichSideshiftAmountErrorMessage(message, paymentRequest, options = {}) {
   if (!message || !paymentRequest?.currencyCode) {
     return message;
   }
 
   const s = String(message).trim();
-  const { currencyCode } = paymentRequest;
 
-  const depositLow = /^Amount too low\. Minimum deposit amount:\s*([\d.eE+-]+)\s*$/i;
-  const depositHigh = /^Amount too high\. Maximum deposit amount:\s*([\d.eE+-]+)\s*$/i;
+  const depositLow = /^(Amount too low\. Minimum deposit amount:\s*)([\d.eE+-]+)(?:\s*BCH)?\.?\s*$/i;
+  const depositHigh = /^(Amount too high\. Maximum deposit amount:\s*)([\d.eE+-]+)(?:\s*BCH)?\.?\s*$/i;
 
-  if ((depositLow.test(s) || depositHigh.test(s)) && !/\bBCH\b/i.test(s)) {
-    // API sometimes ends the numeric amount with a full stop; avoid "... 0.01. BCH".
-    const base = s.replace(/\.\s*$/, '');
-    return `${base} BCH`;
+  const lowMatch = s.match(depositLow);
+  if (lowMatch) {
+    const base = `${lowMatch[1]}${lowMatch[2]} BCH`;
+    const usd = formatBchUsdEstimate(lowMatch[2], options.bchUsdRate);
+    return usd ? `${base} (~${usd} USD)` : base;
+  }
+
+  const highMatch = s.match(depositHigh);
+  if (highMatch) {
+    return `${highMatch[1]}${highMatch[2]} BCH`;
   }
 
   return message;
+}
+
+async function fetchBchUsdRate(options = {}) {
+  const res = await fetch(BCH_USD_PRICE_URL, {
+    method: 'GET',
+    signal: options.signal,
+  });
+
+  const text = await res.text();
+  const data = parseJsonResponse(text);
+
+  if (!res.ok) {
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+
+  const rate = Number(data?.['bitcoin-cash']?.usd);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    throw new Error('BCH/USD price response did not include a usable rate.');
+  }
+  return rate;
 }
 
 function authHeaders(secret) {
@@ -115,7 +155,8 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
 
   if (!quoteRes.ok) {
     const msg = httpErrorMessage(quoteData, quoteText || `HTTP ${quoteRes.status}`);
-    throw new Error(enrichSideshiftAmountErrorMessage(msg, paymentRequest));
+    const bchUsdRate = await fetchBchUsdRate({ signal: options.signal }).catch(() => null);
+    throw new Error(enrichSideshiftAmountErrorMessage(msg, paymentRequest, { bchUsdRate }));
   }
 
   const quoteId = quoteData?.id;
