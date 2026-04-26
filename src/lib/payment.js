@@ -1,146 +1,131 @@
 const LIQUID_BTC_ASSET_ID = '6f0279e9ed041c3d710a9f57d0c02928416460c4b722ae3457a11eec381c526d';
 
-const SUPPORTED_SCHEMES = Object.freeze({
-  bitcoin: {
-    currencyCode: 'BTC',
-    methodId: 'btc',
-    networkId: 'bitcoin',
-    label: 'Bitcoin',
+const SUPPORTED_SCHEME_GROUPS = Object.freeze([
+  {
+    schemes: ['bitcoin'],
+    config: {
+      currencyCode: 'BTC',
+      methodId: 'btc',
+      networkId: 'bitcoin',
+      label: 'Bitcoin',
+    },
   },
-  litecoin: {
-    currencyCode: 'LTC',
-    methodId: 'ltc',
-    networkId: 'litecoin',
-    label: 'Litecoin',
+  {
+    schemes: ['litecoin'],
+    config: {
+      currencyCode: 'LTC',
+      methodId: 'ltc',
+      networkId: 'litecoin',
+      label: 'Litecoin',
+    },
   },
-  dogecoin: {
-    currencyCode: 'DOGE',
-    methodId: 'doge',
-    networkId: 'doge',
-    label: 'Dogecoin',
+  {
+    schemes: ['dogecoin'],
+    config: {
+      currencyCode: 'DOGE',
+      methodId: 'doge',
+      networkId: 'doge',
+      label: 'Dogecoin',
+    },
   },
-  dash: {
-    currencyCode: 'DASH',
-    methodId: 'dash',
-    networkId: 'dash',
-    label: 'Dash',
+  {
+    schemes: ['dash'],
+    config: {
+      currencyCode: 'DASH',
+      methodId: 'dash',
+      networkId: 'dash',
+      label: 'Dash',
+    },
   },
-  liquidnetwork: {
-    currencyCode: 'BTC',
-    methodId: 'btc',
-    networkId: 'liquid',
-    assetId: LIQUID_BTC_ASSET_ID,
-    label: 'Liquid Bitcoin',
+  {
+    schemes: ['liquidnetwork', 'liquid'],
+    config: {
+      currencyCode: 'BTC',
+      methodId: 'btc',
+      networkId: 'liquid',
+      assetId: LIQUID_BTC_ASSET_ID,
+      label: 'Liquid Bitcoin',
+    },
   },
-  liquid: {
-    currencyCode: 'BTC',
-    methodId: 'btc',
-    networkId: 'liquid',
-    assetId: LIQUID_BTC_ASSET_ID,
-    label: 'Liquid Bitcoin',
+  {
+    schemes: ['ecash', 'xec'],
+    config: {
+      currencyCode: 'XEC',
+      methodId: 'xec',
+      networkId: 'xec',
+      label: 'eCash',
+    },
   },
-  ecash: {
-    currencyCode: 'XEC',
-    methodId: 'xec',
-    networkId: 'xec',
-    label: 'eCash',
+  {
+    schemes: ['cardano', 'web+cardano'],
+    config: {
+      currencyCode: 'ADA',
+      methodId: 'ada',
+      networkId: 'cardano',
+      label: 'Cardano',
+    },
   },
-  xec: {
-    currencyCode: 'XEC',
-    methodId: 'xec',
-    networkId: 'xec',
-    label: 'eCash',
+  {
+    schemes: ['algorand', 'algo'],
+    config: {
+      currencyCode: 'ALGO',
+      methodId: 'algo',
+      networkId: 'algorand',
+      amountDecimals: 6,
+      integerAmount: true,
+      memoKeys: ['xnote', 'note'],
+      label: 'Algorand',
+    },
   },
-  cardano: {
-    currencyCode: 'ADA',
-    methodId: 'ada',
-    networkId: 'cardano',
-    label: 'Cardano',
+  {
+    schemes: ['polkadot', 'dot'],
+    config: {
+      currencyCode: 'DOT',
+      methodId: 'dot',
+      networkId: 'polkadot',
+      label: 'Polkadot',
+    },
   },
-  'web+cardano': {
-    currencyCode: 'ADA',
-    methodId: 'ada',
-    networkId: 'cardano',
-    label: 'Cardano',
+  {
+    schemes: ['ripple', 'xrp', 'xrpl'],
+    config: {
+      currencyCode: 'XRP',
+      methodId: 'xrp',
+      networkId: 'ripple',
+      memoKeys: ['dt'],
+      label: 'XRP',
+    },
   },
-  algorand: {
-    currencyCode: 'ALGO',
-    methodId: 'algo',
-    networkId: 'algorand',
-    amountDecimals: 6,
-    integerAmount: true,
-    memoKeys: ['xnote', 'note'],
-    label: 'Algorand',
+  {
+    schemes: ['solana', 'sol'],
+    config: {
+      currencyCode: 'SOL',
+      methodId: 'sol',
+      networkId: 'solana',
+      label: 'Solana',
+    },
   },
-  algo: {
-    currencyCode: 'ALGO',
-    methodId: 'algo',
-    networkId: 'algorand',
-    amountDecimals: 6,
-    integerAmount: true,
-    memoKeys: ['xnote', 'note'],
-    label: 'Algorand',
+  {
+    schemes: ['tron', 'trx'],
+    config: {
+      currencyCode: 'TRX',
+      methodId: 'trx',
+      networkId: 'tron',
+      label: 'Tron',
+    },
   },
-  polkadot: {
-    currencyCode: 'DOT',
-    methodId: 'dot',
-    networkId: 'polkadot',
-    label: 'Polkadot',
-  },
-  dot: {
-    currencyCode: 'DOT',
-    methodId: 'dot',
-    networkId: 'polkadot',
-    label: 'Polkadot',
-  },
-  ripple: {
-    currencyCode: 'XRP',
-    methodId: 'xrp',
-    networkId: 'ripple',
-    memoKeys: ['dt'],
-    label: 'XRP',
-  },
-  xrp: {
-    currencyCode: 'XRP',
-    methodId: 'xrp',
-    networkId: 'ripple',
-    memoKeys: ['dt'],
-    label: 'XRP',
-  },
-  xrpl: {
-    currencyCode: 'XRP',
-    methodId: 'xrp',
-    networkId: 'ripple',
-    memoKeys: ['dt'],
-    label: 'XRP',
-  },
-  solana: {
-    currencyCode: 'SOL',
-    methodId: 'sol',
-    networkId: 'solana',
-    label: 'Solana',
-  },
-  sol: {
-    currencyCode: 'SOL',
-    methodId: 'sol',
-    networkId: 'solana',
-    label: 'Solana',
-  },
-  tron: {
-    currencyCode: 'TRX',
-    methodId: 'trx',
-    networkId: 'tron',
-    label: 'Tron',
-  },
-  trx: {
-    currencyCode: 'TRX',
-    methodId: 'trx',
-    networkId: 'tron',
-    label: 'Tron',
-  },
-});
+]);
 
-const SUPPORTED_SCHEME_LABEL = 'bitcoin, litecoin, dogecoin, dash, liquidnetwork/liquid, ecash/xec, cardano/web+cardano, algorand/algo, polkadot/dot, ripple/xrp/xrpl, solana/sol, tron/trx';
+const SUPPORTED_SCHEMES = Object.freeze(
+  Object.fromEntries(
+    SUPPORTED_SCHEME_GROUPS.flatMap(({ schemes, config }) => {
+      const frozenConfig = Object.freeze({ ...config });
+      return schemes.map((scheme) => [scheme, frozenConfig]);
+    }),
+  ),
+);
+
+const SUPPORTED_SCHEME_LABEL = SUPPORTED_SCHEME_GROUPS.map(({ schemes }) => schemes.join('/')).join(', ');
 
 const DECIMAL_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
 const INTEGER_PATTERN = /^(?:0|[1-9]\d*)$/;

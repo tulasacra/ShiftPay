@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBchDeepLink, parsePaymentCode } from '../lib/payment.js';
+import { SUPPORTED_SCHEMES, buildBchDeepLink, parsePaymentCode } from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
   it('parses a BTC BIP21 payment request', () => {
@@ -155,6 +155,20 @@ describe('parsePaymentCode', () => {
 
   it('rejects unsupported schemes', () => {
     expect(() => parsePaymentCode('ethereum:0x1234?amount=1')).toThrow('Unsupported payment URI.');
+  });
+});
+
+describe('SUPPORTED_SCHEMES', () => {
+  it('maps aliases to shared scheme configs', () => {
+    expect(SUPPORTED_SCHEMES.liquid).toBe(SUPPORTED_SCHEMES.liquidnetwork);
+    expect(SUPPORTED_SCHEMES.xec).toBe(SUPPORTED_SCHEMES.ecash);
+    expect(SUPPORTED_SCHEMES['web+cardano']).toBe(SUPPORTED_SCHEMES.cardano);
+    expect(SUPPORTED_SCHEMES.algo).toBe(SUPPORTED_SCHEMES.algorand);
+    expect(SUPPORTED_SCHEMES.dot).toBe(SUPPORTED_SCHEMES.polkadot);
+    expect(SUPPORTED_SCHEMES.xrp).toBe(SUPPORTED_SCHEMES.ripple);
+    expect(SUPPORTED_SCHEMES.xrpl).toBe(SUPPORTED_SCHEMES.ripple);
+    expect(SUPPORTED_SCHEMES.sol).toBe(SUPPORTED_SCHEMES.solana);
+    expect(SUPPORTED_SCHEMES.trx).toBe(SUPPORTED_SCHEMES.tron);
   });
 });
 
