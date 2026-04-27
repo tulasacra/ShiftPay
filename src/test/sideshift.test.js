@@ -10,13 +10,14 @@ import {
 describe('enrichSideshiftAmountErrorMessage', () => {
   const btcPayment = { currencyCode: 'BTC' };
 
-  it('appends BCH to minimum deposit errors with a bare number', () => {
+  it('appends BCH and USD estimate to minimum deposit errors with a bare number', () => {
     expect(
       enrichSideshiftAmountErrorMessage(
         'Amount too low. Minimum deposit amount: 0.00012345',
         btcPayment,
+        { bchUsdRate: 400 },
       ),
-    ).toBe('Amount too low. Minimum deposit amount: 0.00012345 BCH');
+    ).toBe('Amount too low. Minimum deposit amount: 0.00012345 BCH (~0.05 USD)');
   });
 
   it('drops a trailing period after the amount before appending BCH', () => {
@@ -26,6 +27,16 @@ describe('enrichSideshiftAmountErrorMessage', () => {
         btcPayment,
       ),
     ).toBe('Amount too low. Minimum deposit amount: 0.01056636 BCH');
+  });
+
+  it('uses a less-than-cent USD estimate for tiny minimum deposit errors', () => {
+    expect(
+      enrichSideshiftAmountErrorMessage(
+        'Amount too low. Minimum deposit amount: 0.000001',
+        btcPayment,
+        { bchUsdRate: 400 },
+      ),
+    ).toBe('Amount too low. Minimum deposit amount: 0.000001 BCH (~<0.01 USD)');
   });
 
   it('appends BCH to maximum deposit errors with a bare number', () => {
@@ -164,6 +175,69 @@ describe('createFixedBchShift', () => {
       settleMemo: '12345',
       affiliateId: 'account',
     });
+  });
+
+  it('adds a BCH/USD estimate to minimum deposit quote errors', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        text: async () =>
+          JSON.stringify({
+            error: { message: 'Amount too low. Minimum deposit amount: 0.01.' },
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ 'bitcoin-cash': { usd: 450 } }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      createFixedBchShift(
+        {
+          address: 'bc1qexampleaddress',
+          amount: '0.001',
+          currencyCode: 'BTC',
+          methodId: 'btc',
+        },
+        { secret: 'secret', affiliateId: 'account' },
+      ),
+    ).rejects.toThrow('Amount too low. Minimum deposit amount: 0.01 BCH (~4.50 USD)');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash&vs_currencies=usd',
+    );
+  });
+
+  it('keeps minimum deposit quote errors in BCH when the USD estimate is unavailable', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        text: async () =>
+          JSON.stringify({
+            error: { message: 'Amount too low. Minimum deposit amount: 0.01.' },
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        text: async () => 'price unavailable',
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      createFixedBchShift(
+        {
+          address: 'bc1qexampleaddress',
+          amount: '0.001',
+          currencyCode: 'BTC',
+          methodId: 'btc',
+        },
+        { secret: 'secret', affiliateId: 'account' },
+      ),
+    ).rejects.toThrow('Amount too low. Minimum deposit amount: 0.01 BCH');
   });
 });
 
