@@ -69,7 +69,9 @@ export function enrichSideshiftAmountErrorMessage(message, paymentRequest, optio
 
   const highMatch = s.match(depositHigh);
   if (highMatch) {
-    return `${highMatch[1]}${highMatch[2]} BCH`;
+    const base = `${highMatch[1]}${highMatch[2]} BCH`;
+    const usd = formatBchUsdEstimate(highMatch[2], options.bchUsdRate);
+    return usd ? `${base} (~${usd} USD)` : base;
   }
 
   return message;

@@ -39,12 +39,19 @@ describe('enrichSideshiftAmountErrorMessage', () => {
     ).toBe('Amount too low. Minimum deposit amount: 0.000001 BCH (~<0.01 USD)');
   });
 
-  it('appends BCH to maximum deposit errors with a bare number', () => {
+  it('appends BCH and USD estimate to maximum deposit errors with a bare number', () => {
     expect(
       enrichSideshiftAmountErrorMessage(
         'Amount too high. Maximum deposit amount: 12',
         btcPayment,
+        { bchUsdRate: 500 },
       ),
+    ).toBe('Amount too high. Maximum deposit amount: 12 BCH (~6000.00 USD)');
+  });
+
+  it('appends BCH only to maximum deposit errors when USD estimate is unavailable', () => {
+    expect(
+      enrichSideshiftAmountErrorMessage('Amount too high. Maximum deposit amount: 12', btcPayment),
     ).toBe('Amount too high. Maximum deposit amount: 12 BCH');
   });
 
