@@ -46,7 +46,7 @@ describe('enrichSideshiftAmountErrorMessage', () => {
         btcPayment,
         { bchUsdRate: 500 },
       ),
-    ).toBe('Amount too high. Maximum deposit amount: 12 BCH (~6000.00 USD)');
+    ).toBe('Amount too high. Maximum deposit amount: 12 BCH (~6,000.00 USD)');
   });
 
   it('appends BCH only to maximum deposit errors when USD estimate is unavailable', () => {

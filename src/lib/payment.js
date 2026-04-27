@@ -1,3 +1,5 @@
+import { formatEnUsNumber } from './formatNumber.js';
+
 const LIQUID_BTC_ASSET_ID = '6f0279e9ed041c3d710a9f57d0c02928416460c4b722ae3457a11eec381c526d';
 
 const SUPPORTED_SCHEME_GROUPS = Object.freeze([
@@ -254,7 +256,7 @@ export function parsePaymentCode(rawValue) {
     scheme,
     address,
     amount,
-    amountLabel: `${amount} ${config.currencyCode}`,
+    amountLabel: `${formatEnUsNumber(amount)} ${config.currencyCode}`,
     currencyCode: config.currencyCode,
     label: config.label,
     methodId: config.methodId,
