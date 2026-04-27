@@ -61,6 +61,8 @@ const clearHistoryButton = document.getElementById('clearHistoryButton');
 const SHIFT_POLL_MS = 4000;
 
 const SECRET_MASK = '*'.repeat(24);
+const CAMERA_READY_STATUS = 'Camera ready. Scan a supported payment QR.';
+const CAMERA_UNAVAILABLE_STATUS = 'Camera unavailable here. Use "Scan from image" instead.';
 
 const state = {
   scanner: null,
@@ -86,6 +88,13 @@ function escapeHtml(value) {
 function setStatus(message, tone = 'info') {
   statusBanner.textContent = message;
   statusBanner.className = `status-banner ${tone}`;
+}
+
+function clearStaleCameraUnavailableStatus() {
+  if (statusBanner.textContent !== CAMERA_UNAVAILABLE_STATUS || !isScannerVideoLive()) {
+    return;
+  }
+  setStatus(CAMERA_READY_STATUS, 'info');
 }
 
 const SIDESHIFT_BLOCKED_HELP_URL =
@@ -573,13 +582,17 @@ async function startScanner(options = {}) {
   try {
     await state.scanner.start();
     updateScannerTargetPanelVisibility();
-    if (!preserveStatusOnReady) {
-      setStatus('Camera ready. Scan a supported payment QR.', 'info');
+    if (!preserveStatusOnReady || statusBanner.textContent === CAMERA_UNAVAILABLE_STATUS) {
+      setStatus(CAMERA_READY_STATUS, 'info');
     }
   } catch (error) {
     updateScannerTargetPanelVisibility();
+    if (isScannerVideoLive()) {
+      clearStaleCameraUnavailableStatus();
+      return;
+    }
     if (!preserveStatusOnReady) {
-      setStatus('Camera unavailable here. Use "Scan from image" instead.', 'warning');
+      setStatus(CAMERA_UNAVAILABLE_STATUS, 'warning');
     }
   }
 }
@@ -854,6 +867,14 @@ function bindUi() {
   });
 
   video?.addEventListener('emptied', () => {
+    updateScannerTargetPanelVisibility();
+  });
+  video?.addEventListener('loadeddata', () => {
+    clearStaleCameraUnavailableStatus();
+    updateScannerTargetPanelVisibility();
+  });
+  video?.addEventListener('playing', () => {
+    clearStaleCameraUnavailableStatus();
     updateScannerTargetPanelVisibility();
   });
 }
