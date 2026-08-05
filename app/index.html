@@ -154,6 +154,46 @@
           </article>
         </dialog>
 
+        <dialog id="networkDialog" class="settings-dialog" aria-labelledby="networkDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="networkDialogTitle">Pick the network</h2>
+              <button type="button" id="cancelNetworkButton" class="secondary-button">Cancel</button>
+            </div>
+            <p id="networkDialogLede" class="muted creds-lede">
+              This code has no network prefix, so ShiftPay cannot tell which coin it pays. Pick the
+              network it belongs to and enter the amount to send.
+            </p>
+            <p id="networkAddress" class="creds-status muted"></p>
+            <form id="networkForm" class="credential-form">
+              <label class="field">
+                <span>Network</span>
+                <select id="networkSelect" class="text-input"></select>
+              </label>
+              <label id="networkAmountField" class="field">
+                <span>Amount</span>
+                <input
+                  id="networkAmountInput"
+                  class="text-input"
+                  type="text"
+                  name="amount"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="0.00"
+                  required
+                />
+              </label>
+              <div class="button-stack">
+                <button id="confirmNetworkButton" class="primary-button" type="submit">
+                  Continue
+                </button>
+              </div>
+            </form>
+            <p id="networkError" class="creds-status" role="status"></p>
+          </article>
+        </dialog>
+
         <section class="scanner-card" aria-label="QR code scanner">
           <div class="scanner-frame" id="scannerFrame">
             <video id="scannerVideo" playsinline muted></video>
