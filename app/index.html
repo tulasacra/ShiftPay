@@ -160,7 +160,7 @@
               <h2 id="networkDialogTitle">Pick the network</h2>
               <button type="button" id="cancelNetworkButton" class="secondary-button">Cancel</button>
             </div>
-            <p class="muted creds-lede">
+            <p id="networkDialogLede" class="muted creds-lede">
               This code has no network prefix, so ShiftPay cannot tell which coin it pays. Pick the
               network it belongs to and enter the amount to send.
             </p>
@@ -170,7 +170,7 @@
                 <span>Network</span>
                 <select id="networkSelect" class="text-input"></select>
               </label>
-              <label class="field">
+              <label id="networkAmountField" class="field">
                 <span>Amount</span>
                 <input
                   id="networkAmountInput"

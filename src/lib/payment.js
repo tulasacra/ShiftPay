@@ -170,6 +170,11 @@ export function hasSchemePrefix(rawValue) {
   return normalizeUri(rawValue).indexOf(':') >= 1;
 }
 
+/** True when a prefix-less payload already carries an amount query parameter. */
+export function hasPayloadAmount(rawValue) {
+  return Boolean(splitPayload(normalizeUri(rawValue)).query.amount);
+}
+
 function parseUriParts(rawValue, schemeOverride) {
   const trimmed = normalizeUri(rawValue);
 

@@ -4,6 +4,7 @@ import {
   SUPPORTED_NETWORKS,
   SUPPORTED_SCHEMES,
   buildBchDeepLink,
+  hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
 } from '../lib/payment.js';
@@ -178,6 +179,18 @@ describe('hasSchemePrefix', () => {
   });
 });
 
+describe('hasPayloadAmount', () => {
+  it('detects an amount query on a prefix-less payload', () => {
+    expect(hasPayloadAmount('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.5')).toBe(true);
+    expect(hasPayloadAmount('rExampleXrpAddress?amount=30&dt=12345')).toBe(true);
+  });
+
+  it('is false when the payload has no amount', () => {
+    expect(hasPayloadAmount('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(false);
+    expect(hasPayloadAmount('rExampleXrpAddress?dt=12345')).toBe(false);
+  });
+});
+
 describe('parsePaymentCode with a picked network', () => {
   it('parses a bare address using the picked scheme and amount', () => {
     expect(
@@ -229,10 +242,16 @@ describe('parsePaymentCode with a picked network', () => {
     });
   });
 
-  it('overrides an amount already present in the code', () => {
+  it('uses the amount already present when only the scheme is picked', () => {
     expect(
-      parsePaymentCode('bc1qexampleaddress?amount=0.1', { scheme: 'bitcoin', amount: '0.25' }),
-    ).toMatchObject({ amount: '0.25', amountLabel: '0.25 BTC' });
+      parsePaymentCode('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.5', {
+        scheme: 'bitcoin',
+      }),
+    ).toMatchObject({
+      amount: '0.5',
+      amountLabel: '0.5 BTC',
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    });
   });
 
   it('rejects a picked scheme that is not supported', () => {
