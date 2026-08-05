@@ -129,6 +129,12 @@ const SUPPORTED_SCHEMES = Object.freeze(
 
 const SUPPORTED_SCHEME_LABEL = SUPPORTED_SCHEME_GROUPS.map(({ schemes }) => schemes.join('/')).join(', ');
 
+const SUPPORTED_NETWORKS = Object.freeze(
+  SUPPORTED_SCHEME_GROUPS.map(({ schemes, config }) =>
+    Object.freeze({ scheme: schemes[0], label: config.label }),
+  ),
+);
+
 const DECIMAL_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
 const INTEGER_PATTERN = /^(?:0|[1-9]\d*)$/;
 
@@ -151,22 +157,39 @@ function normalizeUri(rawValue) {
   return rawValue.trim().replace(/\u00a0/g, ' ');
 }
 
-function parseUriParts(rawValue) {
+function splitPayload(payload) {
+  const [rawAddress, rawQuery = ''] = payload.replace(/^\/\//, '').split('?');
+
+  return {
+    address: decodeValue(rawAddress),
+    query: readQuery(rawQuery),
+  };
+}
+
+export function hasSchemePrefix(rawValue) {
+  return normalizeUri(rawValue).indexOf(':') >= 1;
+}
+
+function parseUriParts(rawValue, schemeOverride) {
   const trimmed = normalizeUri(rawValue);
+
+  if (schemeOverride) {
+    return {
+      scheme: schemeOverride.toLowerCase(),
+      ...splitPayload(trimmed),
+      raw: trimmed,
+    };
+  }
+
   const separatorIndex = trimmed.indexOf(':');
 
   if (separatorIndex < 1) {
     throw new Error('The QR code is not a supported crypto payment URI.');
   }
 
-  const scheme = trimmed.slice(0, separatorIndex).toLowerCase();
-  const payload = trimmed.slice(separatorIndex + 1).replace(/^\/\//, '');
-  const [rawAddress, rawQuery = ''] = payload.split('?');
-
   return {
-    scheme,
-    address: decodeValue(rawAddress),
-    query: readQuery(rawQuery),
+    scheme: trimmed.slice(0, separatorIndex).toLowerCase(),
+    ...splitPayload(trimmed.slice(separatorIndex + 1)),
     raw: trimmed,
   };
 }
@@ -216,6 +239,11 @@ function parseAmount(amountText, config) {
   return amountText;
 }
 
+/** A hand-entered amount is always the coin's main unit, never a URI smallest-unit value. */
+function parseMainUnitAmount(amountText) {
+  return parseAmount(amountText, {});
+}
+
 function requireSupportedAsset(query, config) {
   if (!config.assetId) {
     return;
@@ -239,11 +267,14 @@ function readSettleMemo(query, config) {
   return '';
 }
 
-export function parsePaymentCode(rawValue) {
-  const { scheme, address, query, raw } = parseUriParts(rawValue);
+export function parsePaymentCode(rawValue, options = {}) {
+  const { scheme, address, query, raw } = parseUriParts(rawValue, options.scheme);
   const config = requireSupportedScheme(scheme);
   requireSupportedAsset(query, config);
-  const amount = parseAmount(query.amount, config);
+  const amount =
+    options.amount === undefined
+      ? parseAmount(query.amount, config)
+      : parseMainUnitAmount(options.amount);
 
   if (!address) {
     throw new Error('The payment code is missing a destination address.');
@@ -280,4 +311,4 @@ export function buildBchDeepLink(address, amount, memo) {
   return `bitcoincash:${normalizedAddress}?${params.toString()}`;
 }
 
-export { SUPPORTED_SCHEMES, SUPPORTED_SCHEME_LABEL };
+export { SUPPORTED_NETWORKS, SUPPORTED_SCHEMES, SUPPORTED_SCHEME_LABEL };

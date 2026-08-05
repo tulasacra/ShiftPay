@@ -28,7 +28,8 @@ a {
 
 button,
 input,
-label {
+label,
+select {
   font: inherit;
 }
 
@@ -463,6 +464,18 @@ h1 {
 .creds-status {
   margin: var(--page-inline) 0 0;
   line-height: 1.5;
+}
+
+.creds-status--error {
+  color: #fca5a5;
+}
+
+#networkAddress {
+  word-break: break-word;
+}
+
+#networkError:empty {
+  margin-top: 0;
 }
 
 .history-list {

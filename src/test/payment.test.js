@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { SUPPORTED_SCHEMES, buildBchDeepLink, parsePaymentCode } from '../lib/payment.js';
+import {
+  SUPPORTED_NETWORKS,
+  SUPPORTED_SCHEMES,
+  buildBchDeepLink,
+  hasSchemePrefix,
+  parsePaymentCode,
+} from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
   it('parses a BTC BIP21 payment request with formatted display amount in amountLabel', () => {
@@ -157,6 +163,113 @@ describe('parsePaymentCode', () => {
 
   it('rejects unsupported schemes', () => {
     expect(() => parsePaymentCode('ethereum:0x1234?amount=1')).toThrow('Unsupported payment URI.');
+  });
+});
+
+describe('hasSchemePrefix', () => {
+  it('detects codes that carry a network prefix', () => {
+    expect(hasSchemePrefix('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=1')).toBe(true);
+    expect(hasSchemePrefix('web+cardano:addr1qx2exampleaddress?amount=1')).toBe(true);
+  });
+
+  it('treats bare addresses as prefix-less', () => {
+    expect(hasSchemePrefix('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(false);
+    expect(hasSchemePrefix('  ALGOEXAMPLEADDRESS  ')).toBe(false);
+  });
+});
+
+describe('parsePaymentCode with a picked network', () => {
+  it('parses a bare address using the picked scheme and amount', () => {
+    expect(
+      parsePaymentCode('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', {
+        scheme: 'bitcoin',
+        amount: '1234.5678',
+      }),
+    ).toEqual({
+      raw: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      scheme: 'bitcoin',
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      amount: '1234.5678',
+      amountLabel: '1,234.5678 BTC',
+      currencyCode: 'BTC',
+      label: 'Bitcoin',
+      methodId: 'btc',
+      networkId: 'bitcoin',
+    });
+  });
+
+  it('reads a picked amount as the main unit, not the URI smallest unit', () => {
+    expect(parsePaymentCode('ALGOEXAMPLEADDRESS', { scheme: 'algorand', amount: '1.5' })).toEqual({
+      raw: 'ALGOEXAMPLEADDRESS',
+      scheme: 'algorand',
+      address: 'ALGOEXAMPLEADDRESS',
+      amount: '1.5',
+      amountLabel: '1.5 ALGO',
+      currencyCode: 'ALGO',
+      label: 'Algorand',
+      methodId: 'algo',
+      networkId: 'algorand',
+    });
+  });
+
+  it('keeps memo parameters carried by a prefix-less code', () => {
+    expect(
+      parsePaymentCode('rExampleXrpAddress?dt=12345', { scheme: 'ripple', amount: '30' }),
+    ).toEqual({
+      raw: 'rExampleXrpAddress?dt=12345',
+      scheme: 'ripple',
+      address: 'rExampleXrpAddress',
+      amount: '30',
+      amountLabel: '30 XRP',
+      currencyCode: 'XRP',
+      label: 'XRP',
+      methodId: 'xrp',
+      networkId: 'ripple',
+      settleMemo: '12345',
+    });
+  });
+
+  it('overrides an amount already present in the code', () => {
+    expect(
+      parsePaymentCode('bc1qexampleaddress?amount=0.1', { scheme: 'bitcoin', amount: '0.25' }),
+    ).toMatchObject({ amount: '0.25', amountLabel: '0.25 BTC' });
+  });
+
+  it('rejects a picked scheme that is not supported', () => {
+    expect(() => parsePaymentCode('0x1234exampleaddress', { scheme: 'ethereum', amount: '1' })).toThrow(
+      'Unsupported payment URI.',
+    );
+  });
+
+  it('rejects a picked amount that is not a positive decimal', () => {
+    expect(() => parsePaymentCode('bc1qexampleaddress', { scheme: 'bitcoin', amount: 'abc' })).toThrow(
+      'The payment amount must be a positive decimal value.',
+    );
+  });
+
+  it('still requires the L-BTC asset id when Liquid Bitcoin is picked', () => {
+    expect(() =>
+      parsePaymentCode('el1qqd0exampleliquidaddress', { scheme: 'liquidnetwork', amount: '0.42' }),
+    ).toThrow('Liquid Bitcoin payment codes must include an assetid.');
+  });
+});
+
+describe('SUPPORTED_NETWORKS', () => {
+  it('lists one canonical scheme per supported network', () => {
+    expect(SUPPORTED_NETWORKS).toEqual([
+      { scheme: 'bitcoin', label: 'Bitcoin' },
+      { scheme: 'litecoin', label: 'Litecoin' },
+      { scheme: 'dogecoin', label: 'Dogecoin' },
+      { scheme: 'dash', label: 'Dash' },
+      { scheme: 'liquidnetwork', label: 'Liquid Bitcoin' },
+      { scheme: 'ecash', label: 'eCash' },
+      { scheme: 'cardano', label: 'Cardano' },
+      { scheme: 'algorand', label: 'Algorand' },
+      { scheme: 'polkadot', label: 'Polkadot' },
+      { scheme: 'ripple', label: 'XRP' },
+      { scheme: 'solana', label: 'Solana' },
+      { scheme: 'tron', label: 'Tron' },
+    ]);
   });
 });
 

@@ -1,6 +1,12 @@
 import QrScanner from 'qr-scanner';
 
-import { SUPPORTED_SCHEME_LABEL, buildBchDeepLink, parsePaymentCode } from './lib/payment.js';
+import {
+  SUPPORTED_NETWORKS,
+  SUPPORTED_SCHEME_LABEL,
+  buildBchDeepLink,
+  hasSchemePrefix,
+  parsePaymentCode,
+} from './lib/payment.js';
 import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
   clearStoredCredentials,
@@ -58,12 +64,20 @@ const historyList = document.getElementById('historyList');
 const historyStatus = document.getElementById('historyStatus');
 const refreshHistoryButton = document.getElementById('refreshHistoryButton');
 const clearHistoryButton = document.getElementById('clearHistoryButton');
+const networkDialog = document.getElementById('networkDialog');
+const networkForm = document.getElementById('networkForm');
+const networkSelect = document.getElementById('networkSelect');
+const networkAmountInput = document.getElementById('networkAmountInput');
+const networkAddress = document.getElementById('networkAddress');
+const networkError = document.getElementById('networkError');
+const cancelNetworkButton = document.getElementById('cancelNetworkButton');
 
 const SHIFT_POLL_MS = 4000;
 
 const SECRET_MASK = '*'.repeat(24);
 const CAMERA_READY_STATUS = 'Camera ready. Scan a supported payment QR.';
 const CAMERA_UNAVAILABLE_STATUS = 'Camera unavailable here. Use "Scan from image" instead.';
+const NETWORK_PROMPT_STATUS = 'This code has no network prefix. Pick the network to continue.';
 
 const state = {
   scanner: null,
@@ -75,6 +89,7 @@ const state = {
   shiftOrder: null,
   shouldResumeScannerAfterModal: false,
   sideshiftCreateShiftAllowed: true,
+  pendingNetworkPayload: null,
 };
 
 function escapeHtml(value) {
@@ -698,6 +713,58 @@ async function openRequestFromPayment(paymentRequest) {
   await createShiftFromPayment();
 }
 
+function setNetworkError(message) {
+  if (!networkError) {
+    return;
+  }
+  networkError.textContent = message;
+  networkError.classList.toggle('creds-status--error', Boolean(message));
+}
+
+function openNetworkPicker(scannedText) {
+  state.pendingNetworkPayload = scannedText;
+  if (networkAddress) {
+    networkAddress.textContent = scannedText;
+  }
+  if (networkAmountInput) {
+    networkAmountInput.value = '';
+  }
+  setNetworkError('');
+  setStatus(NETWORK_PROMPT_STATUS, 'warning');
+  networkDialog?.showModal();
+}
+
+async function submitNetworkPicker() {
+  const scannedText = state.pendingNetworkPayload;
+  if (!scannedText) {
+    return;
+  }
+
+  let paymentRequest;
+  try {
+    paymentRequest = parsePaymentCode(scannedText, {
+      scheme: networkSelect.value,
+      amount: networkAmountInput.value.trim(),
+    });
+  } catch (error) {
+    setNetworkError(error.message);
+    return;
+  }
+
+  state.pendingNetworkPayload = null;
+  networkDialog?.close();
+  await openRequestFromPayment(paymentRequest);
+}
+
+/** Leaves the scanner stopped so the same prefix-less code cannot immediately reopen the dialog. */
+function cancelNetworkPicker() {
+  if (!state.pendingNetworkPayload) {
+    return;
+  }
+  state.pendingNetworkPayload = null;
+  setStatus('No network picked. Use "Scan another code" to try again.', 'info');
+}
+
 async function handleDecodedText(decodedText) {
   if (state.isBusy) {
     return;
@@ -707,6 +774,10 @@ async function handleDecodedText(decodedText) {
 
   try {
     await stopScanner();
+    if (!hasSchemePrefix(decodedText)) {
+      openNetworkPicker(decodedText.trim());
+      return;
+    }
     const paymentRequest = parsePaymentCode(decodedText);
     await openRequestFromPayment(paymentRequest);
   } catch (error) {
@@ -810,6 +881,23 @@ function bindUi() {
   bindModalWithScannerPause(helpDialog);
   bindModalWithScannerPause(historyDialog);
 
+  networkForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await submitNetworkPicker();
+  });
+
+  networkDialog?.addEventListener('click', (event) => {
+    if (event.target === networkDialog) {
+      networkDialog.close();
+    }
+  });
+
+  networkDialog?.addEventListener('close', cancelNetworkPicker);
+
+  cancelNetworkButton?.addEventListener('click', () => {
+    networkDialog?.close();
+  });
+
   settingsButton?.addEventListener('click', async () => {
     await openModalWithScannerPause(settingsDialog);
   });
@@ -884,6 +972,11 @@ renderShiftDetails(null);
 setWalletLinkState(null);
 if (supportedSchemesLabel) {
   supportedSchemesLabel.textContent = SUPPORTED_SCHEME_LABEL;
+}
+if (networkSelect) {
+  networkSelect.innerHTML = SUPPORTED_NETWORKS.map(
+    ({ scheme, label }) => `<option value="${escapeHtml(scheme)}">${escapeHtml(label)}</option>`,
+  ).join('');
 }
 renderCredsStatus();
 const existingCreds = getStoredCredentials();
