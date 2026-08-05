@@ -3,13 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { SUPPORTED_SCHEMES, buildBchDeepLink, parsePaymentCode } from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
-  it('parses a BTC BIP21 payment request', () => {
-    expect(parsePaymentCode('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.015')).toEqual({
-      raw: 'bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.015',
+  it('parses a BTC BIP21 payment request with formatted display amount in amountLabel', () => {
+    expect(
+      parsePaymentCode('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=1234.5678'),
+    ).toEqual({
+      raw: 'bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=1234.5678',
       scheme: 'bitcoin',
       address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-      amount: '0.015',
-      amountLabel: '0.015 BTC',
+      amount: '1234.5678',
+      amountLabel: '1,234.5678 BTC',
       currencyCode: 'BTC',
       label: 'Bitcoin',
       methodId: 'btc',
@@ -32,12 +34,12 @@ describe('parsePaymentCode', () => {
       },
     ],
     [
-      'ecash:qq123exampleaddress?amount=2500',
+      'ecash:qq123exampleaddress?amount=12345',
       {
         scheme: 'ecash',
         address: 'qq123exampleaddress',
-        amount: '2500',
-        amountLabel: '2500 XEC',
+        amount: '12345',
+        amountLabel: '12,345 XEC',
         currencyCode: 'XEC',
         label: 'eCash',
         methodId: 'xec',

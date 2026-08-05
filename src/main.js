@@ -26,6 +26,7 @@ import {
   shouldShowDepositDetected,
   terminalShiftStatusMessage,
 } from './lib/shiftStatus.js';
+import { formatEnUsHistoryDate, formatEnUsNumber } from './lib/formatNumber.js';
 import './styles.css';
 
 const statusBanner = document.getElementById('statusBanner');
@@ -149,14 +150,7 @@ function resolveSecretForSave() {
 }
 
 function formatHistoryTimestamp(value) {
-  if (!value) {
-    return '';
-  }
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) {
-    return '';
-  }
-  return d.toLocaleString();
+  return formatEnUsHistoryDate(value);
 }
 
 function renderHistoryList() {
@@ -178,15 +172,17 @@ function renderHistoryList() {
     return;
   }
 
-  historyStatus.textContent = `${entries.length} shift${entries.length === 1 ? '' : 's'} saved in this browser.`;
+  historyStatus.textContent = `${formatEnUsNumber(entries.length)} shift${
+    entries.length === 1 ? '' : 's'
+  } saved in this browser.`;
   historyList.hidden = false;
   historyList.innerHTML = entries
     .map((entry) => {
       const status = entry.status || 'unknown';
       const statusClass = `history-item-status--${escapeHtml(String(status).toLowerCase())}`;
-      const settleAmount = entry.settleAmount || entry.paymentAmount || '?';
+      const settleAmount = formatEnUsNumber(entry.settleAmount || entry.paymentAmount || '?');
       const settleCoin = (entry.settleCoin || entry.paymentCurrency || '').toUpperCase();
-      const depositAmount = entry.depositAmount || '?';
+      const depositAmount = formatEnUsNumber(entry.depositAmount || '?');
       const when = formatHistoryTimestamp(entry.createdAt);
       return `
         <li>
@@ -220,7 +216,9 @@ async function refreshHistoryStatuses() {
   }
   const stale = entries.filter((e) => !isTerminalStatus(e.status));
   if (stale.length === 0) {
-    historyStatus.textContent = `${entries.length} shift${entries.length === 1 ? '' : 's'} saved in this browser. All final.`;
+    historyStatus.textContent = `${formatEnUsNumber(entries.length)} shift${
+      entries.length === 1 ? '' : 's'
+    } saved in this browser. All final.`;
     return;
   }
   historyStatus.textContent = 'Refreshing statuses…';
@@ -240,7 +238,9 @@ async function refreshHistoryStatuses() {
       });
     }
     renderHistoryList();
-    historyStatus.textContent = `Updated ${shifts.length} of ${stale.length} non-final shift${stale.length === 1 ? '' : 's'}.`;
+    historyStatus.textContent = `Updated ${formatEnUsNumber(shifts.length)} of ${formatEnUsNumber(
+      stale.length,
+    )} non-final shift${stale.length === 1 ? '' : 's'}.`;
   } catch (error) {
     renderHistoryList();
     historyStatus.textContent = `Could not refresh: ${error?.message || 'request failed'}`;
@@ -267,7 +267,7 @@ function reopenShiftFromHistory(shiftId) {
         currencyCode: (entry.settleCoin || '').toUpperCase(),
         label: (entry.settleCoin || '').toUpperCase(),
         amount: entry.settleAmount || '',
-        amountLabel: `${entry.settleAmount || ''} ${(entry.settleCoin || '').toUpperCase()}`.trim(),
+        amountLabel: `${formatEnUsNumber(entry.settleAmount || '')} ${(entry.settleCoin || '').toUpperCase()}`.trim(),
         address: entry.settleAddress || '',
         methodId: (entry.settleCoin || '').toLowerCase(),
         networkId: entry.settleNetwork || '',
@@ -400,7 +400,7 @@ function renderShiftDetails(order) {
   shiftDetails.innerHTML = `
     <div>
       <dt>BCH amount</dt>
-      <dd>${escapeHtml(order.depositAmount)} BCH</dd>
+      <dd>${escapeHtml(formatEnUsNumber(order.depositAmount))} BCH</dd>
     </div>
     <div>
       <dt>BCH address</dt>
@@ -408,9 +408,9 @@ function renderShiftDetails(order) {
     </div>
     <div>
       <dt>Target payout</dt>
-      <dd>${escapeHtml(order.settleAmount || state.paymentRequest?.amount || '?')} ${escapeHtml(
-        (order.settleCoin || state.paymentRequest?.currencyCode || '').toUpperCase(),
-      )}</dd>
+      <dd>${escapeHtml(
+        formatEnUsNumber(order.settleAmount || state.paymentRequest?.amount || '?'),
+      )} ${escapeHtml((order.settleCoin || state.paymentRequest?.currencyCode || '').toUpperCase())}</dd>
     </div>
     <div>
       <dt>Order</dt>

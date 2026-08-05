@@ -1,3 +1,5 @@
+import { formatEnUsNumber, formatEnUsUsd2 } from './formatNumber.js';
+
 const SIDESHIFT_API_V2 = 'https://sideshift.ai/api/v2';
 const BCH_USD_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash&vs_currencies=usd';
 
@@ -36,7 +38,8 @@ function formatBchUsdEstimate(bchAmount, bchUsdRate) {
   if (usd > 0 && usd < 0.01) {
     return '<0.01';
   }
-  return usd.toFixed(2);
+  const s = formatEnUsUsd2(usd);
+  return s ?? usd.toFixed(2);
 }
 
 /**
@@ -62,14 +65,16 @@ export function enrichSideshiftAmountErrorMessage(message, paymentRequest, optio
 
   const lowMatch = s.match(depositLow);
   if (lowMatch) {
-    const base = `${lowMatch[1]}${lowMatch[2]} BCH`;
+    const amt = formatEnUsNumber(lowMatch[2]);
+    const base = `${lowMatch[1]}${amt} BCH`;
     const usd = formatBchUsdEstimate(lowMatch[2], options.bchUsdRate);
     return usd ? `${base} (~${usd} USD)` : base;
   }
 
   const highMatch = s.match(depositHigh);
   if (highMatch) {
-    const base = `${highMatch[1]}${highMatch[2]} BCH`;
+    const amt = formatEnUsNumber(highMatch[2]);
+    const base = `${highMatch[1]}${amt} BCH`;
     const usd = formatBchUsdEstimate(highMatch[2], options.bchUsdRate);
     return usd ? `${base} (~${usd} USD)` : base;
   }
