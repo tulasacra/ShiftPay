@@ -5,6 +5,15 @@ const ETHEREUM_MAINNET_CHAIN_ID = '1';
 const ETHEREUM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const SCIENTIFIC_PATTERN = /^(\d+)(?:\.(\d+))?[eE]\+?(\d+)$/;
 
+const BASE58 = '[1-9A-HJ-NP-Za-km-z]';
+const BECH32 = '[0-9a-z]';
+const BASE32 = '[A-Z2-7]';
+
+/** Anchored matcher for the recipient formats a network uses, to detect prefix-less codes. */
+function addressForms(...forms) {
+  return new RegExp(`^(?:${forms.join('|')})$`);
+}
+
 const SUPPORTED_SCHEME_GROUPS = Object.freeze([
   {
     schemes: ['bitcoin'],
@@ -13,6 +22,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'btc',
       networkId: 'bitcoin',
       label: 'Bitcoin',
+      addressPattern: addressForms(`[13]${BASE58}{25,33}`, `bc1${BECH32}{11,71}`),
     },
   },
   {
@@ -22,6 +32,8 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'ltc',
       networkId: 'litecoin',
       label: 'Litecoin',
+      // Litecoin still accepts the legacy 3-prefix P2SH form it shares with Bitcoin.
+      addressPattern: addressForms(`[LM3]${BASE58}{25,33}`, `ltc1${BECH32}{11,71}`),
     },
   },
   {
@@ -31,6 +43,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'doge',
       networkId: 'doge',
       label: 'Dogecoin',
+      addressPattern: addressForms(`[D9A]${BASE58}{32,33}`),
     },
   },
   {
@@ -40,6 +53,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'dash',
       networkId: 'dash',
       label: 'Dash',
+      addressPattern: addressForms(`[X7]${BASE58}{32,33}`),
     },
   },
   {
@@ -50,6 +64,11 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       networkId: 'liquid',
       assetId: LIQUID_BTC_ASSET_ID,
       label: 'Liquid Bitcoin',
+      addressPattern: addressForms(
+        `lq1${BECH32}{20,}`,
+        `ex1${BECH32}{11,71}`,
+        `V(?:JL|T)${BASE58}{60,90}`,
+      ),
     },
   },
   {
@@ -59,6 +78,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'xec',
       networkId: 'xec',
       label: 'eCash',
+      addressPattern: addressForms(`[qp]${BECH32}{41}`),
     },
   },
   {
@@ -68,6 +88,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'ada',
       networkId: 'cardano',
       label: 'Cardano',
+      addressPattern: addressForms(`addr1${BECH32}{50,}`),
     },
   },
   {
@@ -80,6 +101,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       integerAmount: true,
       memoKeys: ['xnote', 'note'],
       label: 'Algorand',
+      addressPattern: addressForms(`${BASE32}{58}`),
     },
   },
   {
@@ -89,6 +111,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'dot',
       networkId: 'polkadot',
       label: 'Polkadot',
+      addressPattern: addressForms(`1${BASE58}{46,47}`),
     },
   },
   {
@@ -99,6 +122,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       networkId: 'ripple',
       memoKeys: ['dt'],
       label: 'XRP',
+      addressPattern: addressForms(`r${BASE58}{24,34}`),
     },
   },
   {
@@ -108,6 +132,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'sol',
       networkId: 'solana',
       label: 'Solana',
+      addressPattern: addressForms(`${BASE58}{43,44}`),
     },
   },
   {
@@ -117,6 +142,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       methodId: 'trx',
       networkId: 'tron',
       label: 'Tron',
+      addressPattern: addressForms(`T${BASE58}{33}`),
     },
   },
   {
@@ -130,6 +156,7 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       integerAmount: true,
       eip681: true,
       label: 'Ethereum',
+      addressPattern: ETHEREUM_ADDRESS_PATTERN,
     },
   },
 ]);
@@ -191,8 +218,9 @@ export function hasSchemePrefix(rawValue) {
 }
 
 /** True when a prefix-less payload already carries an amount query parameter. */
-export function hasPayloadAmount(rawValue) {
-  return Boolean(splitPayload(normalizeUri(rawValue)).query.amount);
+export function hasPayloadAmount(rawValue, scheme) {
+  const { query } = splitPayload(normalizeUri(rawValue));
+  return Boolean(readAmountText(query, SUPPORTED_SCHEMES[scheme?.toLowerCase()] ?? {}));
 }
 
 function parseUriParts(rawValue, schemeOverride) {
@@ -292,6 +320,25 @@ export function readMissingAmountDetails(rawValue) {
     methodId: config.methodId,
     networkId: config.networkId,
   };
+}
+
+/** Settle targets of every supported network whose recipient format fits a prefix-less payload. */
+export function detectNetworksFromAddress(rawValue) {
+  const { address } = splitPayload(normalizeUri(rawValue));
+
+  if (!address) {
+    return [];
+  }
+
+  return SUPPORTED_SCHEME_GROUPS.filter(({ config }) => config.addressPattern.test(address)).map(
+    ({ schemes, config }) => ({
+      scheme: schemes[0],
+      label: config.label,
+      currencyCode: config.currencyCode,
+      methodId: config.methodId,
+      networkId: config.networkId,
+    }),
+  );
 }
 
 export function readSchemeCurrencyCode(scheme) {

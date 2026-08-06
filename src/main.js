@@ -4,6 +4,7 @@ import {
   SUPPORTED_NETWORKS,
   SUPPORTED_SCHEME_LABEL,
   buildBchDeepLink,
+  detectNetworksFromAddress,
   hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
@@ -106,6 +107,7 @@ const state = {
   shouldResumeScannerAfterModal: false,
   sideshiftCreateShiftAllowed: true,
   pendingNetworkPayload: null,
+  pendingNetworkScheme: null,
   pendingNetworkAmountLocked: false,
   pendingAmountSettle: null,
   pairHintAbort: null,
@@ -760,6 +762,20 @@ function setNetworkAmountHint(text) {
   networkAmountHint.textContent = text;
 }
 
+function renderNetworkOptions(networks) {
+  if (!networkSelect) {
+    return;
+  }
+  networkSelect.innerHTML = [
+    '<option value="" selected disabled>Select a network</option>',
+    ...networks.map(
+      ({ scheme, label }) =>
+        `<option value="${escapeHtml(scheme)}">${escapeHtml(label)}</option>`,
+    ),
+  ].join('');
+  networkSelect.value = '';
+}
+
 function abortPairHintFetch() {
   state.pairHintAbort?.abort();
   state.pairHintAbort = null;
@@ -800,38 +816,47 @@ async function refreshNetworkAmountMinimum(settle) {
   }
 }
 
-/** A known network means the code carries its own prefix, so only the amount is still missing. */
-function openNetworkPicker(scannedText, missingAmount = null) {
-  const knownNetwork = missingAmount?.label ?? '';
+/**
+ * A known network is either carried by the code's own prefix or detected from the recipient
+ * format, so only the amount is still missing. Choices narrow the list when several fit.
+ */
+function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
+  const hasPrefix = hasSchemePrefix(scannedText);
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
   state.pendingNetworkPayload = scannedText;
+  state.pendingNetworkScheme = knownNetwork?.scheme ?? null;
   state.pendingNetworkAmountLocked = amountLocked;
   state.pendingAmountSettle = null;
 
-  let lede = NETWORK_LEDE_WITHOUT_AMOUNT;
-  if (knownNetwork) {
-    lede = `This ${knownNetwork} code has no amount. Enter the amount to send.`;
-  } else if (amountLocked) {
+  // A locked or narrowed network is already clear from the title / select; skip the lede and address.
+  let lede = '';
+  if (knownNetwork && hasPrefix) {
+    lede = `This ${knownNetwork.label} code has no amount. Enter the amount to send.`;
+  } else if (!knownNetwork && choices.length <= 1 && amountLocked) {
     lede = NETWORK_LEDE_WITH_AMOUNT;
+  } else if (!knownNetwork && choices.length <= 1) {
+    lede = NETWORK_LEDE_WITHOUT_AMOUNT;
   }
 
   if (networkAddress) {
-    if (knownNetwork) {
-      networkAddress.hidden = true;
-      networkAddress.textContent = '';
-    } else {
-      networkAddress.hidden = false;
-      networkAddress.textContent = scannedText;
-    }
+    networkAddress.hidden = true;
+    networkAddress.textContent = '';
   }
   if (networkDialogTitle) {
     networkDialogTitle.textContent = knownNetwork ? 'Enter the amount' : 'Pick the network';
   }
   if (networkDialogLede) {
+    networkDialogLede.hidden = !lede;
     networkDialogLede.textContent = lede;
   }
   if (networkField) {
     networkField.hidden = Boolean(knownNetwork);
+  }
+  if (networkSelect) {
+    networkSelect.required = !knownNetwork;
+  }
+  if (!knownNetwork) {
+    renderNetworkOptions(choices.length > 1 ? choices : SUPPORTED_NETWORKS);
   }
   if (networkAmountField) {
     networkAmountField.hidden = amountLocked;
@@ -842,8 +867,7 @@ function openNetworkPicker(scannedText, missingAmount = null) {
   }
   setNetworkAmountHint('');
   if (!amountLocked) {
-    const settle =
-      missingAmount ?? readSchemeSettleTarget(networkSelect?.value);
+    const settle = knownNetwork ?? readSchemeSettleTarget(networkSelect?.value);
     state.pendingAmountSettle = settle;
     setNetworkAmountLabel(settle?.currencyCode ?? '');
     void refreshNetworkAmountMinimum(settle);
@@ -859,7 +883,9 @@ async function submitNetworkPicker() {
     return;
   }
 
-  const options = hasSchemePrefix(scannedText) ? {} : { scheme: networkSelect.value };
+  const options = hasSchemePrefix(scannedText)
+    ? {}
+    : { scheme: state.pendingNetworkScheme ?? networkSelect.value };
   if (!state.pendingNetworkAmountLocked) {
     options.amount = networkAmountInput.value.trim();
   }
@@ -873,6 +899,7 @@ async function submitNetworkPicker() {
   }
 
   state.pendingNetworkPayload = null;
+  state.pendingNetworkScheme = null;
   state.pendingNetworkAmountLocked = false;
   state.pendingAmountSettle = null;
   networkDialog?.close();
@@ -884,8 +911,10 @@ function cancelNetworkPicker() {
   if (!state.pendingNetworkPayload) {
     return;
   }
-  const wasAmountOnly = hasSchemePrefix(state.pendingNetworkPayload);
+  const wasAmountOnly =
+    Boolean(state.pendingNetworkScheme) || hasSchemePrefix(state.pendingNetworkPayload);
   state.pendingNetworkPayload = null;
+  state.pendingNetworkScheme = null;
   state.pendingNetworkAmountLocked = false;
   state.pendingAmountSettle = null;
   abortPairHintFetch();
@@ -908,7 +937,14 @@ async function handleDecodedText(decodedText) {
   try {
     await stopScanner();
     if (!hasSchemePrefix(decodedText)) {
-      openNetworkPicker(decodedText.trim());
+      const payload = decodedText.trim();
+      const detected = detectNetworksFromAddress(payload);
+      const [onlyNetwork] = detected.length === 1 ? detected : [];
+      if (onlyNetwork && hasPayloadAmount(payload, onlyNetwork.scheme)) {
+        await openRequestFromPayment(parsePaymentCode(payload, { scheme: onlyNetwork.scheme }));
+        return;
+      }
+      openNetworkPicker(payload, onlyNetwork ?? null, detected);
       return;
     }
     const missingAmount = readMissingAmountDetails(decodedText);
@@ -1151,11 +1187,7 @@ setWalletLinkState(null);
 if (supportedSchemesLabel) {
   supportedSchemesLabel.textContent = SUPPORTED_SCHEME_LABEL;
 }
-if (networkSelect) {
-  networkSelect.innerHTML = SUPPORTED_NETWORKS.map(
-    ({ scheme, label }) => `<option value="${escapeHtml(scheme)}">${escapeHtml(label)}</option>`,
-  ).join('');
-}
+renderNetworkOptions(SUPPORTED_NETWORKS);
 renderCredsStatus();
 const existingCreds = getStoredCredentials();
 if (existingCreds && affiliateIdInput) {

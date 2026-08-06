@@ -455,6 +455,17 @@ h1 {
   display: none;
 }
 
+/* Keep one line of space under Amount so the minimum hint does not grow the dialog. */
+#networkAmountHint {
+  display: block;
+  min-height: calc(0.85rem * 1.4);
+}
+
+#networkAmountHint[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
 .text-input {
   width: 100%;
   min-height: 2.75rem;
