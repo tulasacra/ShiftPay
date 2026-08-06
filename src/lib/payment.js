@@ -249,7 +249,13 @@ function expandScientificNotation(amountText) {
   const [, whole, fraction = '', exponent] = match;
   const trailingZeros = Number(exponent) - fraction.length;
 
-  return trailingZeros < 0 ? amountText : `${whole}${fraction}${'0'.repeat(trailingZeros)}`;
+  if (trailingZeros < 0) {
+    return amountText;
+  }
+
+  // Coefficients like 0.01e18 expand to 001e16 digits; strip leading zeros for INTEGER_PATTERN.
+  const digits = `${whole}${fraction}${'0'.repeat(trailingZeros)}`;
+  return digits.replace(/^0+/, '') || '0';
 }
 
 function readAmountText(query, config) {
