@@ -7,6 +7,7 @@ import {
   hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
+  readMissingAmountNetwork,
 } from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
@@ -251,6 +252,36 @@ describe('hasPayloadAmount', () => {
   });
 });
 
+describe('readMissingAmountNetwork', () => {
+  it('names the network of a prefixed code that carries no amount', () => {
+    expect(readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(
+      'Bitcoin',
+    );
+    expect(
+      readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?label=Coffee'),
+    ).toBe('Bitcoin');
+    expect(readMissingAmountNetwork('xrpl://rExampleXrpAddress?dt=12345')).toBe('XRP');
+    expect(readMissingAmountNetwork('web+cardano:addr1qx2exampleaddress')).toBe('Cardano');
+    expect(readMissingAmountNetwork('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1')).toBe(
+      'Ethereum',
+    );
+  });
+
+  it('is empty when the code already carries an amount', () => {
+    expect(
+      readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.5'),
+    ).toBe('');
+    expect(
+      readMissingAmountNetwork('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18'),
+    ).toBe('');
+  });
+
+  it('is empty for prefix-less and unsupported codes', () => {
+    expect(readMissingAmountNetwork('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe('');
+    expect(readMissingAmountNetwork('monero:4Aexampleaddress')).toBe('');
+  });
+});
+
 describe('parsePaymentCode with a picked network', () => {
   it('parses a bare address using the picked scheme and amount', () => {
     expect(
@@ -349,6 +380,51 @@ describe('parsePaymentCode with a picked network', () => {
     expect(() =>
       parsePaymentCode('el1qqd0exampleliquidaddress', { scheme: 'liquidnetwork', amount: '0.42' }),
     ).toThrow('Liquid Bitcoin payment codes must include an assetid.');
+  });
+});
+
+describe('parsePaymentCode with a typed amount', () => {
+  it('keeps the scheme, address and memo carried by the prefixed code', () => {
+    expect(parsePaymentCode('xrpl://rExampleXrpAddress?dt=12345', { amount: '30' })).toEqual({
+      raw: 'xrpl://rExampleXrpAddress?dt=12345',
+      scheme: 'xrpl',
+      address: 'rExampleXrpAddress',
+      amount: '30',
+      amountLabel: '30 XRP',
+      currencyCode: 'XRP',
+      label: 'XRP',
+      methodId: 'xrp',
+      networkId: 'ripple',
+      settleMemo: '12345',
+    });
+  });
+
+  it('reads a typed Ethereum amount as ETH, not wei', () => {
+    expect(
+      parsePaymentCode('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1', {
+        amount: '0.25',
+      }),
+    ).toMatchObject({
+      address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+      amount: '0.25',
+      amountLabel: '0.25 ETH',
+    });
+  });
+
+  it('reads a typed Algorand amount as ALGO, not microAlgos', () => {
+    expect(
+      parsePaymentCode('algorand://ALGOEXAMPLEADDRESS?note=order-123', { amount: '1.5' }),
+    ).toMatchObject({
+      amount: '1.5',
+      amountLabel: '1.5 ALGO',
+      settleMemo: 'order-123',
+    });
+  });
+
+  it('rejects a typed amount that is not greater than zero', () => {
+    expect(() => parsePaymentCode('bitcoin:bc1qexampleaddress', { amount: '0' })).toThrow(
+      'The payment amount must be greater than zero.',
+    );
   });
 });
 

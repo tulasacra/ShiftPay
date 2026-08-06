@@ -257,6 +257,18 @@ function readAmountText(query, config) {
   return '';
 }
 
+/** The network label of a prefixed code that names a supported scheme but carries no amount, else ''. */
+export function readMissingAmountNetwork(rawValue) {
+  if (!hasSchemePrefix(rawValue)) {
+    return '';
+  }
+
+  const { scheme, query } = parseUriParts(rawValue);
+  const config = SUPPORTED_SCHEMES[scheme];
+
+  return config && !readAmountText(query, config) ? config.label : '';
+}
+
 function parseAmount(amountText, config) {
   if (!amountText) {
     throw new Error('The payment code is missing an amount.');
