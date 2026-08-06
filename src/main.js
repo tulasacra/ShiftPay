@@ -766,9 +766,14 @@ function renderNetworkOptions(networks) {
   if (!networkSelect) {
     return;
   }
-  networkSelect.innerHTML = networks
-    .map(({ scheme, label }) => `<option value="${escapeHtml(scheme)}">${escapeHtml(label)}</option>`)
-    .join('');
+  networkSelect.innerHTML = [
+    '<option value="" selected disabled>Select a network</option>',
+    ...networks.map(
+      ({ scheme, label }) =>
+        `<option value="${escapeHtml(scheme)}">${escapeHtml(label)}</option>`,
+    ),
+  ].join('');
+  networkSelect.value = '';
 }
 
 function abortPairHintFetch() {
@@ -847,6 +852,9 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   }
   if (networkField) {
     networkField.hidden = Boolean(knownNetwork);
+  }
+  if (networkSelect) {
+    networkSelect.required = !knownNetwork;
   }
   if (!knownNetwork) {
     renderNetworkOptions(choices.length > 1 ? choices : SUPPORTED_NETWORKS);
