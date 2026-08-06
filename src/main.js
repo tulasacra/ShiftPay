@@ -830,27 +830,30 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   state.pendingNetworkAmountLocked = amountLocked;
   state.pendingAmountSettle = null;
 
-  let lede = NETWORK_LEDE_WITHOUT_AMOUNT;
+  // A locked network already names itself in the amount label; skip the lede and address.
+  let lede = '';
   if (knownNetwork && hasPrefix) {
     lede = `This ${knownNetwork.label} code has no amount. Enter the amount to send.`;
-  } else if (knownNetwork) {
-    lede = `The recipient format matches ${knownNetwork.label} only. Enter the amount to send.`;
-  } else if (choices.length > 1) {
+  } else if (!knownNetwork && choices.length > 1) {
     lede = `The recipient format matches ${joinNetworkLabels(choices)}. Pick the network it belongs to${
       amountLocked ? '' : ' and enter the amount to send'
     }.`;
-  } else if (amountLocked) {
+  } else if (!knownNetwork && amountLocked) {
     lede = NETWORK_LEDE_WITH_AMOUNT;
+  } else if (!knownNetwork) {
+    lede = NETWORK_LEDE_WITHOUT_AMOUNT;
   }
 
   if (networkAddress) {
-    networkAddress.hidden = hasPrefix;
-    networkAddress.textContent = hasPrefix ? '' : scannedText;
+    const showAddress = !knownNetwork && !hasPrefix;
+    networkAddress.hidden = !showAddress;
+    networkAddress.textContent = showAddress ? scannedText : '';
   }
   if (networkDialogTitle) {
     networkDialogTitle.textContent = knownNetwork ? 'Enter the amount' : 'Pick the network';
   }
   if (networkDialogLede) {
+    networkDialogLede.hidden = !lede;
     networkDialogLede.textContent = lede;
   }
   if (networkField) {
