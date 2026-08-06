@@ -4,6 +4,7 @@ import {
   SUPPORTED_NETWORKS,
   SUPPORTED_SCHEMES,
   buildBchDeepLink,
+  detectNetworksFromAddress,
   hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
@@ -264,6 +265,87 @@ describe('hasPayloadAmount', () => {
   it('is false when the payload has no amount', () => {
     expect(hasPayloadAmount('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(false);
     expect(hasPayloadAmount('rExampleXrpAddress?dt=12345')).toBe(false);
+  });
+
+  it('reads the amount key of a detected scheme', () => {
+    expect(
+      hasPayloadAmount('0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18', 'ethereum'),
+    ).toBe(true);
+    expect(hasPayloadAmount('0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18')).toBe(false);
+  });
+});
+
+describe('detectNetworksFromAddress', () => {
+  it.each([
+    ['1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'Bitcoin'],
+    ['bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq', 'Bitcoin'],
+    ['bc1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rusxg3297', 'Bitcoin'],
+    ['LM2WMpR1Rp6j3Sa59cMXMs1SPzj9eXpGc1', 'Litecoin'],
+    ['MQMcJhpWHYVeQArcZR3sBgyPZxxRtnH441', 'Litecoin'],
+    ['ltc1qzvcgmntglcuv4smv3lzj6k8szctvqvqqm3d5bd', 'Litecoin'],
+    ['DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L', 'Dogecoin'],
+    ['9wPqPZ8yxTPRDMLzVCcEV9GUn6fnCtNaHF', 'Dogecoin'],
+    ['XnCB1KwHZthCVDVJvUKZLTQfDgHYzNPKzR', 'Dash'],
+    ['7gnwGHt17heGpG9Crfeh4KGpYNFugPhJdh', 'Dash'],
+    [
+      'lq1qqf8er278e6nyvuwtgf39e6ewvdcnjupn9a86rzpx655y5lhkt0walu3t3egqxpuf0ul59z8dhcjq8q0qs0d6f4a3sdmg9ecrhu2',
+      'Liquid Bitcoin',
+    ],
+    [
+      'VJL8yCLqXWNfLNMLLdEHkNGGPTbcTHZKvZmzQjNRJx8U3rVaVLbEsCf4LhpTFqbHY6xLNGgxWZLcqNZm',
+      'Liquid Bitcoin',
+    ],
+    ['qr9myxjtapczkkc0aqsyj6r6d4pmqsc5uyywc9tehr', 'eCash'],
+    [
+      'addr1qx2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgse35a3x',
+      'Cardano',
+    ],
+    ['MO2H6ZU47Q36GJ6GVHUKGEBEQINN7ZWVACSWTQNKS3HR7WKKB2ZTA5SLQE', 'Algorand'],
+    ['15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5', 'Polkadot'],
+    ['rDsbeomae4FXwgQTJp9Rs64Qg9vDiTCdBv', 'XRP'],
+    ['9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', 'Solana'],
+    ['TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'Tron'],
+    ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e', 'Ethereum'],
+  ])('reads %s as %s only', (address, label) => {
+    expect(detectNetworksFromAddress(address).map((network) => network.label)).toEqual([label]);
+  });
+
+  it('returns the settle target of the detected network', () => {
+    expect(detectNetworksFromAddress('9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM')).toEqual([
+      {
+        scheme: 'solana',
+        label: 'Solana',
+        currencyCode: 'SOL',
+        methodId: 'sol',
+        networkId: 'solana',
+      },
+    ]);
+  });
+
+  it('reports every plausible network when the format is shared', () => {
+    expect(
+      detectNetworksFromAddress('3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy').map(({ label }) => label),
+    ).toEqual(['Bitcoin', 'Litecoin']);
+  });
+
+  it('ignores query parameters carried by the payload', () => {
+    expect(
+      detectNetworksFromAddress('rDsbeomae4FXwgQTJp9Rs64Qg9vDiTCdBv?amount=30&dt=12345').map(
+        ({ label }) => label,
+      ),
+    ).toEqual(['XRP']);
+  });
+
+  it('is empty for formats no supported network uses', () => {
+    expect(
+      detectNetworksFromAddress(
+        '4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRJ5AmD5H3F31vGCkNbjSFEsmJ8GVFXzWTZH4Qd2Xp',
+      ),
+    ).toEqual([]);
+    expect(detectNetworksFromAddress('bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq')).toEqual(
+      [],
+    );
+    expect(detectNetworksFromAddress('')).toEqual([]);
   });
 });
 
