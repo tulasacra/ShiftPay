@@ -119,6 +119,10 @@ describe('settleMinimumFromPair', () => {
     expect(settleMinimumFromPair({ min: '0.03', rate: '0.003' })).toBe('0.00009');
   });
 
+  it('rounds to 8 fractional digits', () => {
+    expect(settleMinimumFromPair({ min: '0.01467', rate: '0.003227' })).toBe('0.00004734');
+  });
+
   it('returns null when min or rate is unusable', () => {
     expect(settleMinimumFromPair({ min: '0', rate: '1' })).toBeNull();
     expect(settleMinimumFromPair({ min: '1', rate: '0' })).toBeNull();

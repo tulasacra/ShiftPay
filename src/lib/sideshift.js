@@ -139,6 +139,7 @@ export async function fetchCreateShiftPermission(options = {}) {
 /**
  * Approximate settle-side minimum from a BCH→* pair (deposit min × rate).
  * Pair mins are in deposit BCH; the amount dialog asks for settle coin.
+ * Rounded to 8 fractional digits (satoshi-scale) so float noise does not leak into the UI.
  */
 export function settleMinimumFromPair(pair) {
   const min = Number(pair?.min);
@@ -150,7 +151,7 @@ export function settleMinimumFromPair(pair) {
   if (!Number.isFinite(product) || product <= 0) {
     return null;
   }
-  return Number(product.toPrecision(12)).toString();
+  return Number(product.toFixed(8)).toString();
 }
 
 /**
