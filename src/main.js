@@ -839,9 +839,8 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   }
 
   if (networkAddress) {
-    const showAddress = !knownNetwork && choices.length <= 1 && !hasPrefix;
-    networkAddress.hidden = !showAddress;
-    networkAddress.textContent = showAddress ? scannedText : '';
+    networkAddress.hidden = true;
+    networkAddress.textContent = '';
   }
   if (networkDialogTitle) {
     networkDialogTitle.textContent = knownNetwork ? 'Enter the amount' : 'Pick the network';
