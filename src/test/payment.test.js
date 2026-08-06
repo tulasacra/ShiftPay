@@ -7,7 +7,9 @@ import {
   hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
+  readMissingAmountDetails,
   readMissingAmountNetwork,
+  readSchemeCurrencyCode,
 } from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
@@ -252,6 +254,40 @@ describe('hasPayloadAmount', () => {
   });
 });
 
+describe('readMissingAmountDetails', () => {
+  it('names the network and currency of a prefixed code that carries no amount', () => {
+    expect(
+      readMissingAmountDetails('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'),
+    ).toEqual({ label: 'Bitcoin', currencyCode: 'BTC' });
+    expect(
+      readMissingAmountDetails('xrpl://rExampleXrpAddress?dt=12345'),
+    ).toEqual({ label: 'XRP', currencyCode: 'XRP' });
+    expect(
+      readMissingAmountDetails('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1'),
+    ).toEqual({ label: 'Ethereum', currencyCode: 'ETH' });
+  });
+
+  it('is null when the code already carries an amount or is unsupported', () => {
+    expect(
+      readMissingAmountDetails('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.5'),
+    ).toBeNull();
+    expect(readMissingAmountDetails('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBeNull();
+    expect(readMissingAmountDetails('monero:4Aexampleaddress')).toBeNull();
+  });
+});
+
+describe('readSchemeCurrencyCode', () => {
+  it('maps a scheme to its currency code', () => {
+    expect(readSchemeCurrencyCode('bitcoin')).toBe('BTC');
+    expect(readSchemeCurrencyCode('xrpl')).toBe('XRP');
+    expect(readSchemeCurrencyCode('ethereum')).toBe('ETH');
+  });
+
+  it('is empty for unsupported schemes', () => {
+    expect(readSchemeCurrencyCode('monero')).toBe('');
+  });
+});
+
 describe('readMissingAmountNetwork', () => {
   it('names the network of a prefixed code that carries no amount', () => {
     expect(readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(
@@ -431,19 +467,19 @@ describe('parsePaymentCode with a typed amount', () => {
 describe('SUPPORTED_NETWORKS', () => {
   it('lists one canonical scheme per supported network', () => {
     expect(SUPPORTED_NETWORKS).toEqual([
-      { scheme: 'bitcoin', label: 'Bitcoin' },
-      { scheme: 'litecoin', label: 'Litecoin' },
-      { scheme: 'dogecoin', label: 'Dogecoin' },
-      { scheme: 'dash', label: 'Dash' },
-      { scheme: 'liquidnetwork', label: 'Liquid Bitcoin' },
-      { scheme: 'ecash', label: 'eCash' },
-      { scheme: 'cardano', label: 'Cardano' },
-      { scheme: 'algorand', label: 'Algorand' },
-      { scheme: 'polkadot', label: 'Polkadot' },
-      { scheme: 'ripple', label: 'XRP' },
-      { scheme: 'solana', label: 'Solana' },
-      { scheme: 'tron', label: 'Tron' },
-      { scheme: 'ethereum', label: 'Ethereum' },
+      { scheme: 'bitcoin', label: 'Bitcoin', currencyCode: 'BTC' },
+      { scheme: 'litecoin', label: 'Litecoin', currencyCode: 'LTC' },
+      { scheme: 'dogecoin', label: 'Dogecoin', currencyCode: 'DOGE' },
+      { scheme: 'dash', label: 'Dash', currencyCode: 'DASH' },
+      { scheme: 'liquidnetwork', label: 'Liquid Bitcoin', currencyCode: 'BTC' },
+      { scheme: 'ecash', label: 'eCash', currencyCode: 'XEC' },
+      { scheme: 'cardano', label: 'Cardano', currencyCode: 'ADA' },
+      { scheme: 'algorand', label: 'Algorand', currencyCode: 'ALGO' },
+      { scheme: 'polkadot', label: 'Polkadot', currencyCode: 'DOT' },
+      { scheme: 'ripple', label: 'XRP', currencyCode: 'XRP' },
+      { scheme: 'solana', label: 'Solana', currencyCode: 'SOL' },
+      { scheme: 'tron', label: 'Tron', currencyCode: 'TRX' },
+      { scheme: 'ethereum', label: 'Ethereum', currencyCode: 'ETH' },
     ]);
   });
 });

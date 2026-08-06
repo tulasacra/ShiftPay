@@ -478,6 +478,10 @@ h1 {
   word-break: break-word;
 }
 
+#networkAddress[hidden] {
+  display: none;
+}
+
 #networkError:empty {
   margin-top: 0;
 }

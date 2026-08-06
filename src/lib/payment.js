@@ -147,7 +147,11 @@ const SUPPORTED_SCHEME_LABEL = SUPPORTED_SCHEME_GROUPS.map(({ schemes }) => sche
 
 const SUPPORTED_NETWORKS = Object.freeze(
   SUPPORTED_SCHEME_GROUPS.map(({ schemes, config }) =>
-    Object.freeze({ scheme: schemes[0], label: config.label }),
+    Object.freeze({
+      scheme: schemes[0],
+      label: config.label,
+      currencyCode: config.currencyCode,
+    }),
   ),
 );
 
@@ -259,14 +263,29 @@ function readAmountText(query, config) {
 
 /** The network label of a prefixed code that names a supported scheme but carries no amount, else ''. */
 export function readMissingAmountNetwork(rawValue) {
+  const details = readMissingAmountDetails(rawValue);
+  return details ? details.label : '';
+}
+
+/** Label and currency code of a prefixed code that names a supported scheme but carries no amount, else null. */
+export function readMissingAmountDetails(rawValue) {
   if (!hasSchemePrefix(rawValue)) {
-    return '';
+    return null;
   }
 
   const { scheme, query } = parseUriParts(rawValue);
   const config = SUPPORTED_SCHEMES[scheme];
 
-  return config && !readAmountText(query, config) ? config.label : '';
+  if (!config || readAmountText(query, config)) {
+    return null;
+  }
+
+  return { label: config.label, currencyCode: config.currencyCode };
+}
+
+export function readSchemeCurrencyCode(scheme) {
+  const config = SUPPORTED_SCHEMES[scheme?.toLowerCase()];
+  return config?.currencyCode ?? '';
 }
 
 function parseAmount(amountText, config) {

@@ -7,7 +7,8 @@ import {
   hasPayloadAmount,
   hasSchemePrefix,
   parsePaymentCode,
-  readMissingAmountNetwork,
+  readMissingAmountDetails,
+  readSchemeCurrencyCode,
 } from './lib/payment.js';
 import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
@@ -73,6 +74,7 @@ const networkForm = document.getElementById('networkForm');
 const networkField = document.getElementById('networkField');
 const networkSelect = document.getElementById('networkSelect');
 const networkAmountField = document.getElementById('networkAmountField');
+const networkAmountLabel = document.getElementById('networkAmountLabel');
 const networkAmountInput = document.getElementById('networkAmountInput');
 const networkAddress = document.getElementById('networkAddress');
 const networkError = document.getElementById('networkError');
@@ -733,8 +735,16 @@ function setNetworkError(message) {
   networkError.classList.toggle('creds-status--error', Boolean(message));
 }
 
+function setNetworkAmountLabel(currencyCode) {
+  if (!networkAmountLabel) {
+    return;
+  }
+  networkAmountLabel.textContent = currencyCode ? `Amount (${currencyCode})` : 'Amount';
+}
+
 /** A known network means the code carries its own prefix, so only the amount is still missing. */
-function openNetworkPicker(scannedText, knownNetwork = '') {
+function openNetworkPicker(scannedText, missingAmount = null) {
+  const knownNetwork = missingAmount?.label ?? '';
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkAmountLocked = amountLocked;
@@ -747,7 +757,13 @@ function openNetworkPicker(scannedText, knownNetwork = '') {
   }
 
   if (networkAddress) {
-    networkAddress.textContent = scannedText;
+    if (knownNetwork) {
+      networkAddress.hidden = true;
+      networkAddress.textContent = '';
+    } else {
+      networkAddress.hidden = false;
+      networkAddress.textContent = scannedText;
+    }
   }
   if (networkDialogTitle) {
     networkDialogTitle.textContent = knownNetwork ? 'Enter the amount' : 'Pick the network';
@@ -764,6 +780,11 @@ function openNetworkPicker(scannedText, knownNetwork = '') {
   if (networkAmountInput) {
     networkAmountInput.value = '';
     networkAmountInput.required = !amountLocked;
+  }
+  if (!amountLocked) {
+    setNetworkAmountLabel(
+      missingAmount?.currencyCode ?? readSchemeCurrencyCode(networkSelect?.value),
+    );
   }
   setNetworkError('');
   setStatus(knownNetwork ? AMOUNT_PROMPT_STATUS : NETWORK_PROMPT_STATUS, 'warning');
@@ -824,9 +845,9 @@ async function handleDecodedText(decodedText) {
       openNetworkPicker(decodedText.trim());
       return;
     }
-    const networkNeedingAmount = readMissingAmountNetwork(decodedText);
-    if (networkNeedingAmount) {
-      openNetworkPicker(decodedText.trim(), networkNeedingAmount);
+    const missingAmount = readMissingAmountDetails(decodedText);
+    if (missingAmount) {
+      openNetworkPicker(decodedText.trim(), missingAmount);
       return;
     }
     const paymentRequest = parsePaymentCode(decodedText);
@@ -935,6 +956,16 @@ function bindUi() {
   networkForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     await submitNetworkPicker();
+  });
+
+  networkSelect?.addEventListener('change', () => {
+    if (
+      state.pendingNetworkPayload &&
+      !hasSchemePrefix(state.pendingNetworkPayload) &&
+      !state.pendingNetworkAmountLocked
+    ) {
+      setNetworkAmountLabel(readSchemeCurrencyCode(networkSelect.value));
+    }
   });
 
   networkDialog?.addEventListener('click', (event) => {
