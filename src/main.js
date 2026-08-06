@@ -912,7 +912,8 @@ function cancelNetworkPicker() {
   if (!state.pendingNetworkPayload) {
     return;
   }
-  const wasAmountOnly = Boolean(state.pendingNetworkScheme) || hasSchemePrefix(state.pendingNetworkPayload);
+  const wasAmountOnly =
+    Boolean(state.pendingNetworkScheme) || hasSchemePrefix(state.pendingNetworkPayload);
   state.pendingNetworkPayload = null;
   state.pendingNetworkScheme = null;
   state.pendingNetworkAmountLocked = false;
