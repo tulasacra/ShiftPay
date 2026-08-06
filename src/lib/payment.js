@@ -1,6 +1,9 @@
 import { formatEnUsNumber } from './formatNumber.js';
 
 const LIQUID_BTC_ASSET_ID = '6f0279e9ed041c3d710a9f57d0c02928416460c4b722ae3457a11eec381c526d';
+const ETHEREUM_MAINNET_CHAIN_ID = '1';
+const ETHEREUM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+const SCIENTIFIC_PATTERN = /^(\d+)(?:\.(\d+))?[eE]\+?(\d+)$/;
 
 const SUPPORTED_SCHEME_GROUPS = Object.freeze([
   {
@@ -116,6 +119,19 @@ const SUPPORTED_SCHEME_GROUPS = Object.freeze([
       label: 'Tron',
     },
   },
+  {
+    schemes: ['ethereum', 'eth'],
+    config: {
+      currencyCode: 'ETH',
+      methodId: 'eth',
+      networkId: 'ethereum',
+      amountKeys: ['value'],
+      amountDecimals: 18,
+      integerAmount: true,
+      eip681: true,
+      label: 'Ethereum',
+    },
+  },
 ]);
 
 const SUPPORTED_SCHEMES = Object.freeze(
@@ -218,30 +234,55 @@ function formatSmallestUnitAmount(amountText, decimals) {
   return fraction ? `${whole}.${fraction}` : whole;
 }
 
+/** EIP-681 writes wei amounts in scientific notation (2.5e17), which the amount patterns reject. */
+function expandScientificNotation(amountText) {
+  const match = SCIENTIFIC_PATTERN.exec(amountText);
+
+  if (!match) {
+    return amountText;
+  }
+
+  const [, whole, fraction = '', exponent] = match;
+  const trailingZeros = Number(exponent) - fraction.length;
+
+  return trailingZeros < 0 ? amountText : `${whole}${fraction}${'0'.repeat(trailingZeros)}`;
+}
+
+function readAmountText(query, config) {
+  for (const key of config.amountKeys || ['amount']) {
+    if (query[key]) {
+      return query[key];
+    }
+  }
+  return '';
+}
+
 function parseAmount(amountText, config) {
   if (!amountText) {
     throw new Error('The payment code is missing an amount.');
   }
 
+  const normalizedAmount = config.eip681 ? expandScientificNotation(amountText) : amountText;
+
   if (config.integerAmount) {
-    if (!INTEGER_PATTERN.test(amountText)) {
+    if (!INTEGER_PATTERN.test(normalizedAmount)) {
       throw new Error('The payment amount must be a positive integer value.');
     }
-  } else if (!DECIMAL_PATTERN.test(amountText)) {
+  } else if (!DECIMAL_PATTERN.test(normalizedAmount)) {
     throw new Error('The payment amount must be a positive decimal value.');
   }
 
-  const numericAmount = Number(amountText);
+  const numericAmount = Number(normalizedAmount);
 
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     throw new Error('The payment amount must be greater than zero.');
   }
 
   if (config.integerAmount && config.amountDecimals) {
-    return formatSmallestUnitAmount(amountText, config.amountDecimals);
+    return formatSmallestUnitAmount(normalizedAmount, config.amountDecimals);
   }
 
-  return amountText;
+  return normalizedAmount;
 }
 
 /** A hand-entered amount is always the coin's main unit, never a URI smallest-unit value. */
@@ -263,6 +304,26 @@ function requireSupportedAsset(query, config) {
   }
 }
 
+/** EIP-681/EIP-831 target: [pay-]<address>[@<chain_id>][/<function_name>]. */
+function readEthereumTarget(target) {
+  const [account, functionName] = target.replace(/^pay-/i, '').split('/');
+  const [address, chainId] = account.split('@');
+
+  if (functionName) {
+    throw new Error('Ethereum payment codes must pay ETH, not call a contract function.');
+  }
+
+  if (chainId && chainId !== ETHEREUM_MAINNET_CHAIN_ID) {
+    throw new Error('Ethereum payment codes must use mainnet (chain id 1).');
+  }
+
+  if (!ETHEREUM_ADDRESS_PATTERN.test(address)) {
+    throw new Error('Ethereum payment codes must use a 0x account address.');
+  }
+
+  return address;
+}
+
 function readSettleMemo(query, config) {
   for (const key of config.memoKeys || []) {
     if (query[key]) {
@@ -276,12 +337,13 @@ export function parsePaymentCode(rawValue, options = {}) {
   const { scheme, address, query, raw } = parseUriParts(rawValue, options.scheme);
   const config = requireSupportedScheme(scheme);
   requireSupportedAsset(query, config);
+  const settleAddress = config.eip681 ? readEthereumTarget(address) : address;
   const amount =
     options.amount === undefined
-      ? parseAmount(query.amount, config)
+      ? parseAmount(readAmountText(query, config), config)
       : parseMainUnitAmount(options.amount);
 
-  if (!address) {
+  if (!settleAddress) {
     throw new Error('The payment code is missing a destination address.');
   }
 
@@ -290,7 +352,7 @@ export function parsePaymentCode(rawValue, options = {}) {
   return {
     raw,
     scheme,
-    address,
+    address: settleAddress,
     amount,
     amountLabel: `${formatEnUsNumber(amount)} ${config.currencyCode}`,
     currencyCode: config.currencyCode,

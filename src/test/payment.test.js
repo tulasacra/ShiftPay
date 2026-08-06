@@ -133,6 +133,19 @@ describe('parsePaymentCode', () => {
         networkId: 'tron',
       },
     ],
+    [
+      'ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1?value=2500000000000000000',
+      {
+        scheme: 'ethereum',
+        address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+        amount: '2.5',
+        amountLabel: '2.5 ETH',
+        currencyCode: 'ETH',
+        label: 'Ethereum',
+        methodId: 'eth',
+        networkId: 'ethereum',
+      },
+    ],
   ])('parses a %s payment request', (uri, expected) => {
     expect(parsePaymentCode(uri)).toEqual({
       raw: uri,
@@ -158,12 +171,59 @@ describe('parsePaymentCode', () => {
     );
   });
 
+  it('reads Ethereum wei amounts written in scientific notation', () => {
+    expect(
+      parsePaymentCode('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=2.5e17'),
+    ).toMatchObject({
+      amount: '0.25',
+      amountLabel: '0.25 ETH',
+    });
+  });
+
+  it('accepts the EIP-831 pay- prefix and defaults to mainnet', () => {
+    expect(
+      parsePaymentCode('ethereum:pay-0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18'),
+    ).toMatchObject({
+      address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+      amount: '1',
+      networkId: 'ethereum',
+    });
+  });
+
+  it('rejects Ethereum payment requests for another chain', () => {
+    expect(() =>
+      parsePaymentCode('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@137?value=1e18'),
+    ).toThrow('Ethereum payment codes must use mainnet (chain id 1).');
+  });
+
+  it('rejects Ethereum contract calls such as ERC-20 transfers', () => {
+    expect(() =>
+      parsePaymentCode(
+        'ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0x742d35Cc6634C0532925a3b844Bc454e4438f44e&uint256=1e6',
+      ),
+    ).toThrow('Ethereum payment codes must pay ETH, not call a contract function.');
+  });
+
+  it('rejects Ethereum payment requests without a 0x account address', () => {
+    expect(() => parsePaymentCode('ethereum:example.eth?value=1e18')).toThrow(
+      'Ethereum payment codes must use a 0x account address.',
+    );
+  });
+
+  it('rejects Ethereum payment requests without a value', () => {
+    expect(() =>
+      parsePaymentCode('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1'),
+    ).toThrow('The payment code is missing an amount.');
+  });
+
   it('rejects zcash payment requests', () => {
     expect(() => parsePaymentCode('zcash:t1exampleaddress?amount=1')).toThrow('Unsupported payment URI.');
   });
 
   it('rejects unsupported schemes', () => {
-    expect(() => parsePaymentCode('ethereum:0x1234?amount=1')).toThrow('Unsupported payment URI.');
+    expect(() => parsePaymentCode('monero:4Aexampleaddress?amount=1')).toThrow(
+      'Unsupported payment URI.',
+    );
   });
 });
 
@@ -254,8 +314,27 @@ describe('parsePaymentCode with a picked network', () => {
     });
   });
 
+  it('reads a picked Ethereum amount as ETH, not wei', () => {
+    expect(
+      parsePaymentCode('0x742d35Cc6634C0532925a3b844Bc454e4438f44e', {
+        scheme: 'ethereum',
+        amount: '0.25',
+      }),
+    ).toEqual({
+      raw: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+      scheme: 'ethereum',
+      address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+      amount: '0.25',
+      amountLabel: '0.25 ETH',
+      currencyCode: 'ETH',
+      label: 'Ethereum',
+      methodId: 'eth',
+      networkId: 'ethereum',
+    });
+  });
+
   it('rejects a picked scheme that is not supported', () => {
-    expect(() => parsePaymentCode('0x1234exampleaddress', { scheme: 'ethereum', amount: '1' })).toThrow(
+    expect(() => parsePaymentCode('4Aexampleaddress', { scheme: 'monero', amount: '1' })).toThrow(
       'Unsupported payment URI.',
     );
   });
@@ -288,6 +367,7 @@ describe('SUPPORTED_NETWORKS', () => {
       { scheme: 'ripple', label: 'XRP' },
       { scheme: 'solana', label: 'Solana' },
       { scheme: 'tron', label: 'Tron' },
+      { scheme: 'ethereum', label: 'Ethereum' },
     ]);
   });
 });
@@ -303,6 +383,7 @@ describe('SUPPORTED_SCHEMES', () => {
     expect(SUPPORTED_SCHEMES.xrpl).toBe(SUPPORTED_SCHEMES.ripple);
     expect(SUPPORTED_SCHEMES.sol).toBe(SUPPORTED_SCHEMES.solana);
     expect(SUPPORTED_SCHEMES.trx).toBe(SUPPORTED_SCHEMES.tron);
+    expect(SUPPORTED_SCHEMES.eth).toBe(SUPPORTED_SCHEMES.ethereum);
   });
 });
 
