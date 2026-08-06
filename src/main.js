@@ -762,13 +762,6 @@ function setNetworkAmountHint(text) {
   networkAmountHint.textContent = text;
 }
 
-function joinNetworkLabels(networks) {
-  const labels = networks.map(({ label }) => label);
-  return labels.length > 1
-    ? `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`
-    : labels.join('');
-}
-
 function renderNetworkOptions(networks) {
   if (!networkSelect) {
     return;
@@ -830,22 +823,18 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   state.pendingNetworkAmountLocked = amountLocked;
   state.pendingAmountSettle = null;
 
-  // A locked network already names itself in the amount label; skip the lede and address.
+  // A locked or narrowed network is already clear from the title / select; skip the lede and address.
   let lede = '';
   if (knownNetwork && hasPrefix) {
     lede = `This ${knownNetwork.label} code has no amount. Enter the amount to send.`;
-  } else if (!knownNetwork && choices.length > 1) {
-    lede = `The recipient format matches ${joinNetworkLabels(choices)}. Pick the network it belongs to${
-      amountLocked ? '' : ' and enter the amount to send'
-    }.`;
-  } else if (!knownNetwork && amountLocked) {
+  } else if (!knownNetwork && choices.length <= 1 && amountLocked) {
     lede = NETWORK_LEDE_WITH_AMOUNT;
-  } else if (!knownNetwork) {
+  } else if (!knownNetwork && choices.length <= 1) {
     lede = NETWORK_LEDE_WITHOUT_AMOUNT;
   }
 
   if (networkAddress) {
-    const showAddress = !knownNetwork && !hasPrefix;
+    const showAddress = !knownNetwork && choices.length <= 1 && !hasPrefix;
     networkAddress.hidden = !showAddress;
     networkAddress.textContent = showAddress ? scannedText : '';
   }
