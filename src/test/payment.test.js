@@ -184,6 +184,18 @@ describe('parsePaymentCode', () => {
     });
   });
 
+  it('reads Ethereum wei amounts with a leading-zero scientific coefficient', () => {
+    expect(
+      parsePaymentCode(
+        'ethereum:0xAFB92E86e5C7ed64843969A4CCE9C97264f873C8?value=0.01e18',
+      ),
+    ).toMatchObject({
+      address: '0xAFB92E86e5C7ed64843969A4CCE9C97264f873C8',
+      amount: '0.01',
+      amountLabel: '0.01 ETH',
+    });
+  });
+
   it('accepts the EIP-831 pay- prefix and defaults to mainnet', () => {
     expect(
       parsePaymentCode('ethereum:pay-0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18'),
