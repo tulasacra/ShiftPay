@@ -166,12 +166,12 @@
             </p>
             <p id="networkAddress" class="creds-status muted"></p>
             <form id="networkForm" class="credential-form">
-              <label class="field">
+              <label id="networkField" class="field">
                 <span>Network</span>
                 <select id="networkSelect" class="text-input"></select>
               </label>
               <label id="networkAmountField" class="field">
-                <span>Amount</span>
+                <span id="networkAmountLabel">Amount</span>
                 <input
                   id="networkAmountInput"
                   class="text-input"
@@ -183,6 +183,7 @@
                   placeholder="0.00"
                   required
                 />
+                <span id="networkAmountHint" class="field-hint muted" hidden></span>
               </label>
               <div class="button-stack">
                 <button id="confirmNetworkButton" class="primary-button" type="submit">

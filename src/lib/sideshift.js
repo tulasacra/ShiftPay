@@ -137,6 +137,72 @@ export async function fetchCreateShiftPermission(options = {}) {
 }
 
 /**
+ * Approximate settle-side minimum from a BCH→* pair (deposit min × rate).
+ * Pair mins are in deposit BCH; the amount dialog asks for settle coin.
+ * Rounded to 8 fractional digits (satoshi-scale) so float noise does not leak into the UI.
+ */
+export function settleMinimumFromPair(pair) {
+  const min = Number(pair?.min);
+  const rate = Number(pair?.rate);
+  if (!Number.isFinite(min) || min <= 0 || !Number.isFinite(rate) || rate <= 0) {
+    return null;
+  }
+  const product = min * rate;
+  if (!Number.isFinite(product) || product <= 0) {
+    return null;
+  }
+  return Number(product.toFixed(8)).toString();
+}
+
+/**
+ * GET /v2/pair/bch/:settle — unauthenticated read of deposit min/max and rate.
+ * @param {string} settleCoin SideShift settle coin id (e.g. btc, eth)
+ * @param {string} [settleNetwork] SideShift settle network id (e.g. bitcoin, liquid)
+ * @param {{ signal?: AbortSignal; affiliateId?: string }} [options]
+ */
+export async function fetchBchSettlePair(settleCoin, settleNetwork, options = {}) {
+  if (!settleCoin) {
+    throw new Error('A settle coin is required to look up the SideShift pair.');
+  }
+
+  const to = settleNetwork ? `${settleCoin}-${settleNetwork}` : settleCoin;
+  const params = new URLSearchParams();
+  if (options.affiliateId) {
+    params.set('affiliateId', options.affiliateId);
+  }
+  const query = params.toString();
+  const url = `${SIDESHIFT_API_V2}/pair/bch/${encodeURIComponent(to)}${query ? `?${query}` : ''}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    signal: options.signal,
+  });
+
+  const text = await res.text();
+  const data = parseJsonResponse(text);
+
+  if (!res.ok) {
+    const msg = httpErrorMessage(data, text || `HTTP ${res.status}`);
+    throw new Error(msg);
+  }
+
+  if (!data?.min || !data?.rate) {
+    throw new Error('SideShift pair response did not include min and rate.');
+  }
+
+  return {
+    min: data.min,
+    max: data.max,
+    rate: data.rate,
+    depositCoin: data.depositCoin,
+    settleCoin: data.settleCoin,
+    depositNetwork: data.depositNetwork,
+    settleNetwork: data.settleNetwork,
+    minSettle: settleMinimumFromPair(data),
+  };
+}
+
+/**
  * @param {{ secret: string; affiliateId: string }} credentials
  */
 export async function createFixedBchShift(paymentRequest, credentials, options = {}) {

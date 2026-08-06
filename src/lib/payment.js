@@ -147,7 +147,11 @@ const SUPPORTED_SCHEME_LABEL = SUPPORTED_SCHEME_GROUPS.map(({ schemes }) => sche
 
 const SUPPORTED_NETWORKS = Object.freeze(
   SUPPORTED_SCHEME_GROUPS.map(({ schemes, config }) =>
-    Object.freeze({ scheme: schemes[0], label: config.label }),
+    Object.freeze({
+      scheme: schemes[0],
+      label: config.label,
+      currencyCode: config.currencyCode,
+    }),
   ),
 );
 
@@ -255,6 +259,51 @@ function readAmountText(query, config) {
     }
   }
   return '';
+}
+
+/** The network label of a prefixed code that names a supported scheme but carries no amount, else ''. */
+export function readMissingAmountNetwork(rawValue) {
+  const details = readMissingAmountDetails(rawValue);
+  return details ? details.label : '';
+}
+
+/** Label, currency and SideShift settle ids of a prefixed code with no amount, else null. */
+export function readMissingAmountDetails(rawValue) {
+  if (!hasSchemePrefix(rawValue)) {
+    return null;
+  }
+
+  const { scheme, query } = parseUriParts(rawValue);
+  const config = SUPPORTED_SCHEMES[scheme];
+
+  if (!config || readAmountText(query, config)) {
+    return null;
+  }
+
+  return {
+    label: config.label,
+    currencyCode: config.currencyCode,
+    methodId: config.methodId,
+    networkId: config.networkId,
+  };
+}
+
+export function readSchemeCurrencyCode(scheme) {
+  return readSchemeSettleTarget(scheme)?.currencyCode ?? '';
+}
+
+/** SideShift settle target for a supported URI scheme, else null. */
+export function readSchemeSettleTarget(scheme) {
+  const config = SUPPORTED_SCHEMES[scheme?.toLowerCase()];
+  if (!config) {
+    return null;
+  }
+  return {
+    label: config.label,
+    currencyCode: config.currencyCode,
+    methodId: config.methodId,
+    networkId: config.networkId,
+  };
 }
 
 function parseAmount(amountText, config) {
