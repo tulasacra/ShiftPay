@@ -44,6 +44,7 @@ const video = document.getElementById('scannerVideo');
 const overlay = document.getElementById('scannerOverlay');
 const imageInput = document.getElementById('imageInput');
 const rescanButton = document.getElementById('rescanButton');
+const pasteUriButton = document.getElementById('pasteUriButton');
 const walletLink = document.getElementById('walletLink');
 const scannerFrame = document.getElementById('scannerFrame');
 const scannerTargetPanel = document.getElementById('scannerTargetPanel');
@@ -946,6 +947,31 @@ async function handleImageInput(event) {
   }
 }
 
+async function handlePasteUri() {
+  if (!navigator.clipboard?.readText) {
+    setStatus('Clipboard paste is not supported in this browser.', 'error');
+    return;
+  }
+
+  try {
+    const text = (await navigator.clipboard.readText()).trim();
+    if (!text) {
+      setStatus('Clipboard is empty.', 'warning');
+      return;
+    }
+    setStatus('Reading payment code from clipboard...', 'info');
+    await handleDecodedText(text);
+  } catch (error) {
+    const denied = error?.name === 'NotAllowedError';
+    setStatus(
+      denied
+        ? 'Clipboard access was denied. Allow paste permission and try again.'
+        : error?.message || 'Could not read the clipboard.',
+      'error',
+    );
+  }
+}
+
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -958,6 +984,7 @@ function registerServiceWorker() {
 
 function bindUi() {
   imageInput.addEventListener('change', handleImageInput);
+  pasteUriButton.addEventListener('click', handlePasteUri);
 
   rescanButton.addEventListener('click', async () => {
     state.paymentRequest = null;
