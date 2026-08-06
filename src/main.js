@@ -785,7 +785,7 @@ async function refreshNetworkAmountMinimum(settle) {
       return;
     }
     setNetworkAmountHint(
-      `Minimum about ${formatEnUsNumber(pair.minSettle)} ${settle.currencyCode}`,
+      `Minimum ~${formatEnUsNumber(pair.minSettle)} ${settle.currencyCode}`,
     );
   } catch (error) {
     if (error?.name === 'AbortError') {
