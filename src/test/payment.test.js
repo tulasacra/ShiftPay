@@ -10,6 +10,7 @@ import {
   readMissingAmountDetails,
   readMissingAmountNetwork,
   readSchemeCurrencyCode,
+  readSchemeSettleTarget,
 } from '../lib/payment.js';
 
 describe('parsePaymentCode', () => {
@@ -258,13 +259,28 @@ describe('readMissingAmountDetails', () => {
   it('names the network and currency of a prefixed code that carries no amount', () => {
     expect(
       readMissingAmountDetails('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'),
-    ).toEqual({ label: 'Bitcoin', currencyCode: 'BTC' });
+    ).toEqual({
+      label: 'Bitcoin',
+      currencyCode: 'BTC',
+      methodId: 'btc',
+      networkId: 'bitcoin',
+    });
     expect(
       readMissingAmountDetails('xrpl://rExampleXrpAddress?dt=12345'),
-    ).toEqual({ label: 'XRP', currencyCode: 'XRP' });
+    ).toEqual({
+      label: 'XRP',
+      currencyCode: 'XRP',
+      methodId: 'xrp',
+      networkId: 'ripple',
+    });
     expect(
       readMissingAmountDetails('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1'),
-    ).toEqual({ label: 'Ethereum', currencyCode: 'ETH' });
+    ).toEqual({
+      label: 'Ethereum',
+      currencyCode: 'ETH',
+      methodId: 'eth',
+      networkId: 'ethereum',
+    });
   });
 
   it('is null when the code already carries an amount or is unsupported', () => {
@@ -273,6 +289,27 @@ describe('readMissingAmountDetails', () => {
     ).toBeNull();
     expect(readMissingAmountDetails('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBeNull();
     expect(readMissingAmountDetails('monero:4Aexampleaddress')).toBeNull();
+  });
+});
+
+describe('readSchemeSettleTarget', () => {
+  it('maps a scheme to its SideShift settle target', () => {
+    expect(readSchemeSettleTarget('bitcoin')).toEqual({
+      label: 'Bitcoin',
+      currencyCode: 'BTC',
+      methodId: 'btc',
+      networkId: 'bitcoin',
+    });
+    expect(readSchemeSettleTarget('liquidnetwork')).toEqual({
+      label: 'Liquid Bitcoin',
+      currencyCode: 'BTC',
+      methodId: 'btc',
+      networkId: 'liquid',
+    });
+  });
+
+  it('is null for unsupported schemes', () => {
+    expect(readSchemeSettleTarget('monero')).toBeNull();
   });
 });
 

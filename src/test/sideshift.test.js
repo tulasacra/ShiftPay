@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createFixedBchShift,
   enrichSideshiftAmountErrorMessage,
+  fetchBchSettlePair,
   fetchCreateShiftPermission,
   fetchShiftsBulk,
+  settleMinimumFromPair,
 } from '../lib/sideshift.js';
 
 describe('enrichSideshiftAmountErrorMessage', () => {
@@ -109,6 +111,90 @@ describe('fetchCreateShiftPermission', () => {
     );
 
     await expect(fetchCreateShiftPermission()).rejects.toThrow('createShift');
+  });
+});
+
+describe('settleMinimumFromPair', () => {
+  it('multiplies deposit min by the settle rate', () => {
+    expect(settleMinimumFromPair({ min: '0.03', rate: '0.003' })).toBe('0.00009');
+  });
+
+  it('returns null when min or rate is unusable', () => {
+    expect(settleMinimumFromPair({ min: '0', rate: '1' })).toBeNull();
+    expect(settleMinimumFromPair({ min: '1', rate: '0' })).toBeNull();
+    expect(settleMinimumFromPair({})).toBeNull();
+  });
+});
+
+describe('fetchBchSettlePair', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('GETs /pair/bch/:coin-network without a secret and returns minSettle', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          min: '0.03',
+          max: '200',
+          rate: '0.003',
+          depositCoin: 'BCH',
+          settleCoin: 'BTC',
+          depositNetwork: 'bitcoincash',
+          settleNetwork: 'bitcoin',
+        }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchBchSettlePair('btc', 'bitcoin')).resolves.toMatchObject({
+      min: '0.03',
+      rate: '0.003',
+      minSettle: '0.00009',
+      settleCoin: 'BTC',
+      settleNetwork: 'bitcoin',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://sideshift.ai/api/v2/pair/bch/btc-bitcoin',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init?.headers).toBeUndefined();
+  });
+
+  it('appends affiliateId when provided', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          min: '0.03',
+          max: '200',
+          rate: '0.003',
+          depositCoin: 'BCH',
+          settleCoin: 'BTC',
+          depositNetwork: 'bitcoincash',
+          settleNetwork: 'bitcoin',
+        }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchBchSettlePair('btc', 'bitcoin', { affiliateId: 'acct' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://sideshift.ai/api/v2/pair/bch/btc-bitcoin?affiliateId=acct',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('throws when the pair response omits min or rate', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        text: async () => JSON.stringify({ depositCoin: 'BCH' }),
+      })),
+    );
+
+    await expect(fetchBchSettlePair('btc', 'bitcoin')).rejects.toThrow('min and rate');
   });
 });
 

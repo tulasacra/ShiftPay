@@ -267,7 +267,7 @@ export function readMissingAmountNetwork(rawValue) {
   return details ? details.label : '';
 }
 
-/** Label and currency code of a prefixed code that names a supported scheme but carries no amount, else null. */
+/** Label, currency and SideShift settle ids of a prefixed code with no amount, else null. */
 export function readMissingAmountDetails(rawValue) {
   if (!hasSchemePrefix(rawValue)) {
     return null;
@@ -280,12 +280,30 @@ export function readMissingAmountDetails(rawValue) {
     return null;
   }
 
-  return { label: config.label, currencyCode: config.currencyCode };
+  return {
+    label: config.label,
+    currencyCode: config.currencyCode,
+    methodId: config.methodId,
+    networkId: config.networkId,
+  };
 }
 
 export function readSchemeCurrencyCode(scheme) {
+  return readSchemeSettleTarget(scheme)?.currencyCode ?? '';
+}
+
+/** SideShift settle target for a supported URI scheme, else null. */
+export function readSchemeSettleTarget(scheme) {
   const config = SUPPORTED_SCHEMES[scheme?.toLowerCase()];
-  return config?.currencyCode ?? '';
+  if (!config) {
+    return null;
+  }
+  return {
+    label: config.label,
+    currencyCode: config.currencyCode,
+    methodId: config.methodId,
+    networkId: config.networkId,
+  };
 }
 
 function parseAmount(amountText, config) {

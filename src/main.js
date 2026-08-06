@@ -8,7 +8,7 @@ import {
   hasSchemePrefix,
   parsePaymentCode,
   readMissingAmountDetails,
-  readSchemeCurrencyCode,
+  readSchemeSettleTarget,
 } from './lib/payment.js';
 import { createAccountViaGraphql } from './lib/sideshiftAccount.js';
 import {
@@ -19,6 +19,7 @@ import {
 } from './lib/sideshiftCredentials.js';
 import {
   createFixedBchShift,
+  fetchBchSettlePair,
   fetchCreateShiftPermission,
   fetchShiftStatus,
   fetchShiftsBulk,
@@ -76,6 +77,7 @@ const networkSelect = document.getElementById('networkSelect');
 const networkAmountField = document.getElementById('networkAmountField');
 const networkAmountLabel = document.getElementById('networkAmountLabel');
 const networkAmountInput = document.getElementById('networkAmountInput');
+const networkAmountHint = document.getElementById('networkAmountHint');
 const networkAddress = document.getElementById('networkAddress');
 const networkError = document.getElementById('networkError');
 const cancelNetworkButton = document.getElementById('cancelNetworkButton');
@@ -104,6 +106,8 @@ const state = {
   sideshiftCreateShiftAllowed: true,
   pendingNetworkPayload: null,
   pendingNetworkAmountLocked: false,
+  pendingAmountSettle: null,
+  pairHintAbort: null,
 };
 
 function escapeHtml(value) {
@@ -742,12 +746,66 @@ function setNetworkAmountLabel(currencyCode) {
   networkAmountLabel.textContent = currencyCode ? `Amount (${currencyCode})` : 'Amount';
 }
 
+function setNetworkAmountHint(text) {
+  if (!networkAmountHint) {
+    return;
+  }
+  if (!text) {
+    networkAmountHint.hidden = true;
+    networkAmountHint.textContent = '';
+    return;
+  }
+  networkAmountHint.hidden = false;
+  networkAmountHint.textContent = text;
+}
+
+function abortPairHintFetch() {
+  state.pairHintAbort?.abort();
+  state.pairHintAbort = null;
+}
+
+async function refreshNetworkAmountMinimum(settle) {
+  abortPairHintFetch();
+  setNetworkAmountHint('');
+
+  if (!settle?.methodId || !settle?.currencyCode) {
+    return;
+  }
+
+  const controller = new AbortController();
+  state.pairHintAbort = controller;
+
+  try {
+    const creds = getStoredCredentials();
+    const pair = await fetchBchSettlePair(settle.methodId, settle.networkId, {
+      signal: controller.signal,
+      affiliateId: creds?.affiliateId,
+    });
+    if (controller.signal.aborted || !pair.minSettle) {
+      return;
+    }
+    setNetworkAmountHint(
+      `Minimum about ${formatEnUsNumber(pair.minSettle)} ${settle.currencyCode}`,
+    );
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      return;
+    }
+    setNetworkAmountHint('');
+  } finally {
+    if (state.pairHintAbort === controller) {
+      state.pairHintAbort = null;
+    }
+  }
+}
+
 /** A known network means the code carries its own prefix, so only the amount is still missing. */
 function openNetworkPicker(scannedText, missingAmount = null) {
   const knownNetwork = missingAmount?.label ?? '';
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkAmountLocked = amountLocked;
+  state.pendingAmountSettle = null;
 
   let lede = NETWORK_LEDE_WITHOUT_AMOUNT;
   if (knownNetwork) {
@@ -781,10 +839,13 @@ function openNetworkPicker(scannedText, missingAmount = null) {
     networkAmountInput.value = '';
     networkAmountInput.required = !amountLocked;
   }
+  setNetworkAmountHint('');
   if (!amountLocked) {
-    setNetworkAmountLabel(
-      missingAmount?.currencyCode ?? readSchemeCurrencyCode(networkSelect?.value),
-    );
+    const settle =
+      missingAmount ?? readSchemeSettleTarget(networkSelect?.value);
+    state.pendingAmountSettle = settle;
+    setNetworkAmountLabel(settle?.currencyCode ?? '');
+    void refreshNetworkAmountMinimum(settle);
   }
   setNetworkError('');
   setStatus(knownNetwork ? AMOUNT_PROMPT_STATUS : NETWORK_PROMPT_STATUS, 'warning');
@@ -812,6 +873,7 @@ async function submitNetworkPicker() {
 
   state.pendingNetworkPayload = null;
   state.pendingNetworkAmountLocked = false;
+  state.pendingAmountSettle = null;
   networkDialog?.close();
   await openRequestFromPayment(paymentRequest);
 }
@@ -824,6 +886,9 @@ function cancelNetworkPicker() {
   const wasAmountOnly = hasSchemePrefix(state.pendingNetworkPayload);
   state.pendingNetworkPayload = null;
   state.pendingNetworkAmountLocked = false;
+  state.pendingAmountSettle = null;
+  abortPairHintFetch();
+  setNetworkAmountHint('');
   setStatus(
     wasAmountOnly
       ? 'No amount entered. Use "Scan another code" to try again.'
@@ -960,12 +1025,16 @@ function bindUi() {
 
   networkSelect?.addEventListener('change', () => {
     if (
-      state.pendingNetworkPayload &&
-      !hasSchemePrefix(state.pendingNetworkPayload) &&
-      !state.pendingNetworkAmountLocked
+      !state.pendingNetworkPayload ||
+      hasSchemePrefix(state.pendingNetworkPayload) ||
+      state.pendingNetworkAmountLocked
     ) {
-      setNetworkAmountLabel(readSchemeCurrencyCode(networkSelect.value));
+      return;
     }
+    const settle = readSchemeSettleTarget(networkSelect.value);
+    state.pendingAmountSettle = settle;
+    setNetworkAmountLabel(settle?.currencyCode ?? '');
+    void refreshNetworkAmountMinimum(settle);
   });
 
   networkDialog?.addEventListener('click', (event) => {
