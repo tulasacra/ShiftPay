@@ -308,6 +308,30 @@ describe('createFixedBchShift', () => {
     );
   });
 
+  it('does not fetch a BCH/USD price for non-amount quote errors', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ error: { message: 'ACCESS_DENIED' } }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      createFixedBchShift(
+        {
+          address: 'bc1qexampleaddress',
+          amount: '0.001',
+          currencyCode: 'BTC',
+          methodId: 'btc',
+        },
+        { secret: 'secret', affiliateId: 'account' },
+      ),
+    ).rejects.toThrow('ACCESS_DENIED');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('https://sideshift.ai/api/v2/quotes');
+  });
+
   it('keeps minimum deposit quote errors in BCH when the USD estimate is unavailable', async () => {
     const fetchMock = vi
       .fn()
