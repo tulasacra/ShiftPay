@@ -109,6 +109,7 @@ const state = {
   isBusy: false,
   orderWaitTimer: null,
   shiftPollTimer: null,
+  shiftPollAbort: null,
   shiftPollLastStatus: null,
   paymentRequest: null,
   shiftOrder: null,
@@ -482,16 +483,25 @@ function resetShiftState() {
 }
 
 function stopShiftStatusPoll() {
+  state.shiftPollAbort?.abort();
+  state.shiftPollAbort = null;
   if (state.shiftPollTimer !== null) {
     window.clearTimeout(state.shiftPollTimer);
     state.shiftPollTimer = null;
   }
 }
 
+/** Aborting is what stops a poll: clearing the timer alone leaves an in-flight tick to reschedule. */
 function startShiftStatusPoll(shiftId) {
   stopShiftStatusPoll();
 
+  const controller = new AbortController();
+  state.shiftPollAbort = controller;
+
   const schedule = (delay) => {
+    if (controller.signal.aborted) {
+      return;
+    }
     state.shiftPollTimer = window.setTimeout(tick, delay);
   };
 
@@ -499,7 +509,10 @@ function startShiftStatusPoll(shiftId) {
     state.shiftPollTimer = null;
 
     try {
-      const shift = await fetchShiftStatus(shiftId);
+      const shift = await fetchShiftStatus(shiftId, { signal: controller.signal });
+      if (controller.signal.aborted) {
+        return;
+      }
       const prev = state.shiftPollLastStatus;
       state.shiftPollLastStatus = shift.status;
       state.shiftOrder = shift;
