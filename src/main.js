@@ -1024,6 +1024,8 @@ async function submitPasteDialog(event) {
     pasteUriInput?.focus();
     return;
   }
+  // Resuming here would race the stop() in handleDecodedText and leave the camera over the results.
+  state.shouldResumeScannerAfterModal = false;
   pasteDialog?.close();
   setStatus('Reading payment code...', 'info');
   await handleDecodedText(text);
