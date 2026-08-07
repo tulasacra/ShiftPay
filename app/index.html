@@ -154,6 +154,36 @@
           </article>
         </dialog>
 
+        <dialog id="pasteDialog" class="settings-dialog" aria-labelledby="pasteDialogTitle">
+          <article class="info-card settings-dialog-card">
+            <div class="settings-dialog-head">
+              <h2 id="pasteDialogTitle">Paste payment code</h2>
+              <button type="button" id="cancelPasteButton" class="secondary-button">Cancel</button>
+            </div>
+            <p id="pasteDialogLede" class="muted creds-lede">
+              Paste a payment URI or address, then continue.
+            </p>
+            <form id="pasteForm" class="credential-form">
+              <label class="field">
+                <span>Payment code</span>
+                <textarea
+                  id="pasteUriInput"
+                  class="text-input paste-uri-input"
+                  name="paymentCode"
+                  rows="3"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Paste here"
+                  required
+                ></textarea>
+              </label>
+              <div class="button-stack">
+                <button id="confirmPasteButton" class="primary-button" type="submit">Continue</button>
+              </div>
+            </form>
+          </article>
+        </dialog>
+
         <dialog id="networkDialog" class="settings-dialog" aria-labelledby="networkDialogTitle">
           <article class="info-card settings-dialog-card">
             <div class="settings-dialog-head">

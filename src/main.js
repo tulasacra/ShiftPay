@@ -83,8 +83,16 @@ const networkAmountHint = document.getElementById('networkAmountHint');
 const networkAddress = document.getElementById('networkAddress');
 const networkError = document.getElementById('networkError');
 const cancelNetworkButton = document.getElementById('cancelNetworkButton');
+const pasteDialog = document.getElementById('pasteDialog');
+const pasteDialogLede = document.getElementById('pasteDialogLede');
+const pasteForm = document.getElementById('pasteForm');
+const pasteUriInput = document.getElementById('pasteUriInput');
+const cancelPasteButton = document.getElementById('cancelPasteButton');
 
 const SHIFT_POLL_MS = 4000;
+const PASTE_DIALOG_LEDE_DEFAULT = 'Paste a payment URI or address, then continue.';
+const PASTE_DIALOG_LEDE_DENIED =
+  'Clipboard access is blocked for this site. Paste below, or re-enable clipboard in your browser site settings.';
 
 const SECRET_MASK = '*'.repeat(24);
 const CAMERA_READY_STATUS = 'Camera ready. Scan a supported payment QR.';
@@ -983,9 +991,34 @@ async function handleImageInput(event) {
   }
 }
 
+async function openPasteDialog(options = {}) {
+  const denied = Boolean(options.denied);
+  if (pasteDialogLede) {
+    pasteDialogLede.textContent = denied ? PASTE_DIALOG_LEDE_DENIED : PASTE_DIALOG_LEDE_DEFAULT;
+  }
+  if (pasteUriInput) {
+    pasteUriInput.value = '';
+  }
+  await openModalWithScannerPause(pasteDialog);
+  pasteUriInput?.focus();
+}
+
+async function submitPasteDialog(event) {
+  event.preventDefault();
+  const text = pasteUriInput?.value.trim() || '';
+  if (!text) {
+    setStatus('Paste a payment code to continue.', 'warning');
+    pasteUriInput?.focus();
+    return;
+  }
+  pasteDialog?.close();
+  setStatus('Reading payment code...', 'info');
+  await handleDecodedText(text);
+}
+
 async function handlePasteUri() {
   if (!navigator.clipboard?.readText) {
-    setStatus('Clipboard paste is not supported in this browser.', 'error');
+    await openPasteDialog();
     return;
   }
 
@@ -998,13 +1031,11 @@ async function handlePasteUri() {
     setStatus('Reading payment code from clipboard...', 'info');
     await handleDecodedText(text);
   } catch (error) {
-    const denied = error?.name === 'NotAllowedError';
-    setStatus(
-      denied
-        ? 'Clipboard access was denied. Allow paste permission and try again.'
-        : error?.message || 'Could not read the clipboard.',
-      'error',
-    );
+    if (error?.name === 'NotAllowedError') {
+      await openPasteDialog({ denied: true });
+      return;
+    }
+    setStatus(error?.message || 'Could not read the clipboard.', 'error');
   }
 }
 
@@ -1021,6 +1052,13 @@ function registerServiceWorker() {
 function bindUi() {
   imageInput.addEventListener('change', handleImageInput);
   pasteUriButton.addEventListener('click', handlePasteUri);
+  pasteForm?.addEventListener('submit', (event) => {
+    void submitPasteDialog(event);
+  });
+  cancelPasteButton?.addEventListener('click', () => {
+    pasteDialog?.close();
+  });
+  bindModalWithScannerPause(pasteDialog);
 
   rescanButton.addEventListener('click', async () => {
     state.paymentRequest = null;

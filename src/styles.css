@@ -494,6 +494,12 @@ h1 {
   outline-offset: 1px;
 }
 
+.paste-uri-input {
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+}
+
 .creds-status {
   margin: var(--page-inline) 0 0;
   line-height: 1.5;
