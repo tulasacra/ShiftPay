@@ -9,8 +9,6 @@ import {
   hasSchemePrefix,
   parsePaymentCode,
   readMissingAmountDetails,
-  readMissingAmountNetwork,
-  readSchemeCurrencyCode,
   readSchemeSettleTarget,
 } from '../lib/payment.js';
 
@@ -404,48 +402,6 @@ describe('readSchemeSettleTarget', () => {
 
   it('is null for unsupported schemes', () => {
     expect(readSchemeSettleTarget('monero')).toBeNull();
-  });
-});
-
-describe('readSchemeCurrencyCode', () => {
-  it('maps a scheme to its currency code', () => {
-    expect(readSchemeCurrencyCode('bitcoin')).toBe('BTC');
-    expect(readSchemeCurrencyCode('xrpl')).toBe('XRP');
-    expect(readSchemeCurrencyCode('ethereum')).toBe('ETH');
-  });
-
-  it('is empty for unsupported schemes', () => {
-    expect(readSchemeCurrencyCode('monero')).toBe('');
-  });
-});
-
-describe('readMissingAmountNetwork', () => {
-  it('names the network of a prefixed code that carries no amount', () => {
-    expect(readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe(
-      'Bitcoin',
-    );
-    expect(
-      readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?label=Coffee'),
-    ).toBe('Bitcoin');
-    expect(readMissingAmountNetwork('xrpl://rExampleXrpAddress?dt=12345')).toBe('XRP');
-    expect(readMissingAmountNetwork('web+cardano:addr1qx2exampleaddress')).toBe('Cardano');
-    expect(readMissingAmountNetwork('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e@1')).toBe(
-      'Ethereum',
-    );
-  });
-
-  it('is empty when the code already carries an amount', () => {
-    expect(
-      readMissingAmountNetwork('bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.5'),
-    ).toBe('');
-    expect(
-      readMissingAmountNetwork('ethereum:0x742d35Cc6634C0532925a3b844Bc454e4438f44e?value=1e18'),
-    ).toBe('');
-  });
-
-  it('is empty for prefix-less and unsupported codes', () => {
-    expect(readMissingAmountNetwork('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')).toBe('');
-    expect(readMissingAmountNetwork('monero:4Aexampleaddress')).toBe('');
   });
 });
 

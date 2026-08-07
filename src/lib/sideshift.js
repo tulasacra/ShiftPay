@@ -46,40 +46,38 @@ function formatBchUsdEstimate(bchAmount, bchUsdRate) {
  * SideShift min/max deposit errors often end with a bare number; fixed BCH→* quotes use BCH as deposit.
  * Settle-side errors refer to the scanned payment amount (paymentRequest currency).
  */
+const DEPOSIT_AMOUNT_PATTERN = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)';
+const DEPOSIT_AMOUNT_LOW = new RegExp(
+  `^(Amount too low\\. Minimum deposit amount:\\s*)${DEPOSIT_AMOUNT_PATTERN}(?:\\s*BCH)?\\.?\\s*$`,
+  'i',
+);
+const DEPOSIT_AMOUNT_HIGH = new RegExp(
+  `^(Amount too high\\. Maximum deposit amount:\\s*)${DEPOSIT_AMOUNT_PATTERN}(?:\\s*BCH)?\\.?\\s*$`,
+  'i',
+);
+
+function matchDepositAmountBoundError(message) {
+  if (!message) {
+    return null;
+  }
+  const s = String(message).trim();
+  return s.match(DEPOSIT_AMOUNT_LOW) || s.match(DEPOSIT_AMOUNT_HIGH);
+}
+
 export function enrichSideshiftAmountErrorMessage(message, paymentRequest, options = {}) {
   if (!message || !paymentRequest?.currencyCode) {
     return message;
   }
 
-  const s = String(message).trim();
-
-  const amountPattern = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)';
-  const depositLow = new RegExp(
-    `^(Amount too low\\. Minimum deposit amount:\\s*)${amountPattern}(?:\\s*BCH)?\\.?\\s*$`,
-    'i',
-  );
-  const depositHigh = new RegExp(
-    `^(Amount too high\\. Maximum deposit amount:\\s*)${amountPattern}(?:\\s*BCH)?\\.?\\s*$`,
-    'i',
-  );
-
-  const lowMatch = s.match(depositLow);
-  if (lowMatch) {
-    const amt = formatEnUsNumber(lowMatch[2]);
-    const base = `${lowMatch[1]}${amt} BCH`;
-    const usd = formatBchUsdEstimate(lowMatch[2], options.bchUsdRate);
-    return usd ? `${base} (~${usd} USD)` : base;
+  const match = matchDepositAmountBoundError(message);
+  if (!match) {
+    return message;
   }
 
-  const highMatch = s.match(depositHigh);
-  if (highMatch) {
-    const amt = formatEnUsNumber(highMatch[2]);
-    const base = `${highMatch[1]}${amt} BCH`;
-    const usd = formatBchUsdEstimate(highMatch[2], options.bchUsdRate);
-    return usd ? `${base} (~${usd} USD)` : base;
-  }
-
-  return message;
+  const amt = formatEnUsNumber(match[2]);
+  const base = `${match[1]}${amt} BCH`;
+  const usd = formatBchUsdEstimate(match[2], options.bchUsdRate);
+  return usd ? `${base} (~${usd} USD)` : base;
 }
 
 async function fetchBchUsdRate(options = {}) {
@@ -235,6 +233,9 @@ export async function createFixedBchShift(paymentRequest, credentials, options =
 
   if (!quoteRes.ok) {
     const msg = httpErrorMessage(quoteData, quoteText || `HTTP ${quoteRes.status}`);
+    if (!paymentRequest?.currencyCode || !matchDepositAmountBoundError(msg)) {
+      throw new Error(msg);
+    }
     const bchUsdRate = await fetchBchUsdRate({ signal: options.signal }).catch(() => null);
     throw new Error(enrichSideshiftAmountErrorMessage(msg, paymentRequest, { bchUsdRate }));
   }

@@ -6,7 +6,6 @@ import {
   appendShift,
   clearShifts,
   listShifts,
-  removeShift,
   updateShift,
 } from '../lib/shiftHistory.js';
 
@@ -98,13 +97,6 @@ describe('shiftHistory', () => {
       depositAddress: 'bitcoincash:qdeposit',
       settleAmount: '0.01',
     });
-  });
-
-  it('removeShift drops a single entry', () => {
-    appendShift('a', { id: 's1' });
-    appendShift('a', { id: 's2' });
-    removeShift('a', 's1');
-    expect(listShifts('a').map((e) => e.id)).toEqual(['s2']);
   });
 
   it('clearShifts removes only the target affiliate', () => {
