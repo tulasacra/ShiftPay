@@ -88,7 +88,7 @@ const SHIFT_POLL_MS = 4000;
 
 const SECRET_MASK = '*'.repeat(24);
 const CAMERA_READY_STATUS = 'Camera ready. Scan a supported payment QR.';
-const CAMERA_UNAVAILABLE_STATUS = 'Camera unavailable here. Use "Scan from image" instead.';
+const CAMERA_UNAVAILABLE_STATUS = 'Camera unavailable here. Use File instead.';
 const NETWORK_PROMPT_STATUS = 'This code has no network prefix. Pick the network to continue.';
 const AMOUNT_PROMPT_STATUS = 'This code has no amount. Enter the amount to continue.';
 const NETWORK_LEDE_WITH_AMOUNT =
@@ -921,8 +921,8 @@ function cancelNetworkPicker() {
   setNetworkAmountHint('');
   setStatus(
     wasAmountOnly
-      ? 'No amount entered. Use "Scan another code" to try again.'
-      : 'No network picked. Use "Scan another code" to try again.',
+      ? 'No amount entered. Use Camera to try again.'
+      : 'No network picked. Use Camera to try again.',
     'info',
   );
 }
