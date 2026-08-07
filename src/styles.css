@@ -509,14 +509,6 @@ h1 {
   color: #fca5a5;
 }
 
-#networkAddress {
-  word-break: break-word;
-}
-
-#networkAddress[hidden] {
-  display: none;
-}
-
 #networkError:empty {
   margin-top: 0;
 }

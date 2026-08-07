@@ -95,28 +95,6 @@ export function updateShift(affiliateId, id, patch) {
 }
 
 /**
- * Removes a single entry from this affiliate's history.
- * @param {string} affiliateId
- * @param {string} id
- */
-export function removeShift(affiliateId, id) {
-  if (!affiliateId || !id) {
-    return;
-  }
-  const key = storageKey(affiliateId);
-  const existing = safeParseArray(localStorage.getItem(key));
-  const next = existing.filter((entry) => entry && entry.id !== id);
-  if (next.length === existing.length) {
-    return;
-  }
-  if (next.length === 0) {
-    localStorage.removeItem(key);
-  } else {
-    localStorage.setItem(key, JSON.stringify(next));
-  }
-}
-
-/**
  * Drops all history entries for an affiliate.
  * @param {string} affiliateId
  */

@@ -295,12 +295,6 @@ function readAmountText(query, config) {
   return '';
 }
 
-/** The network label of a prefixed code that names a supported scheme but carries no amount, else ''. */
-export function readMissingAmountNetwork(rawValue) {
-  const details = readMissingAmountDetails(rawValue);
-  return details ? details.label : '';
-}
-
 /** Label, currency and SideShift settle ids of a prefixed code with no amount, else null. */
 export function readMissingAmountDetails(rawValue) {
   if (!hasSchemePrefix(rawValue)) {
@@ -339,10 +333,6 @@ export function detectNetworksFromAddress(rawValue) {
       networkId: config.networkId,
     }),
   );
-}
-
-export function readSchemeCurrencyCode(scheme) {
-  return readSchemeSettleTarget(scheme)?.currencyCode ?? '';
 }
 
 /** SideShift settle target for a supported URI scheme, else null. */

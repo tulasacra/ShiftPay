@@ -80,7 +80,6 @@ const networkAmountField = document.getElementById('networkAmountField');
 const networkAmountLabel = document.getElementById('networkAmountLabel');
 const networkAmountInput = document.getElementById('networkAmountInput');
 const networkAmountHint = document.getElementById('networkAmountHint');
-const networkAddress = document.getElementById('networkAddress');
 const networkError = document.getElementById('networkError');
 const cancelNetworkButton = document.getElementById('cancelNetworkButton');
 const pasteDialog = document.getElementById('pasteDialog');
@@ -118,7 +117,6 @@ const state = {
   pendingNetworkPayload: null,
   pendingNetworkScheme: null,
   pendingNetworkAmountLocked: false,
-  pendingAmountSettle: null,
   pairHintAbort: null,
 };
 
@@ -225,8 +223,8 @@ function renderHistoryList() {
     .map((entry) => {
       const status = entry.status || 'unknown';
       const statusClass = `history-item-status--${escapeHtml(String(status).toLowerCase())}`;
-      const settleAmount = formatEnUsNumber(entry.settleAmount || entry.paymentAmount || '?');
-      const settleCoin = (entry.settleCoin || entry.paymentCurrency || '').toUpperCase();
+      const settleAmount = formatEnUsNumber(entry.settleAmount || '?');
+      const settleCoin = (entry.settleCoin || '').toUpperCase();
       const depositAmount = formatEnUsNumber(entry.depositAmount || '?');
       const when = formatHistoryTimestamp(entry.createdAt);
       return `
@@ -317,8 +315,8 @@ function reopenShiftFromHistory(shiftId) {
         methodId: (entry.settleCoin || '').toLowerCase(),
         networkId: entry.settleNetwork || '',
         settleMemo: entry.settleMemo || '',
-        raw: entry.paymentRaw || '',
-        scheme: entry.paymentScheme || '',
+        raw: '',
+        scheme: '',
       };
 
   state.paymentRequest = paymentRequest;
@@ -855,7 +853,6 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkScheme = knownNetwork?.scheme ?? null;
   state.pendingNetworkAmountLocked = amountLocked;
-  state.pendingAmountSettle = null;
 
   // A locked or narrowed network is already clear from the title / select; skip the lede and address.
   let lede = '';
@@ -867,10 +864,6 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
     lede = NETWORK_LEDE_WITHOUT_AMOUNT;
   }
 
-  if (networkAddress) {
-    networkAddress.hidden = true;
-    networkAddress.textContent = '';
-  }
   if (networkDialogTitle) {
     networkDialogTitle.textContent = knownNetwork ? 'Enter the amount' : 'Pick the network';
   }
@@ -897,7 +890,6 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   setNetworkAmountHint('');
   if (!amountLocked) {
     const settle = knownNetwork ?? readSchemeSettleTarget(networkSelect?.value);
-    state.pendingAmountSettle = settle;
     setNetworkAmountLabel(settle?.currencyCode ?? '');
     void refreshNetworkAmountMinimum(settle);
   }
@@ -930,7 +922,6 @@ async function submitNetworkPicker() {
   state.pendingNetworkPayload = null;
   state.pendingNetworkScheme = null;
   state.pendingNetworkAmountLocked = false;
-  state.pendingAmountSettle = null;
   networkDialog?.close();
   await openRequestFromPayment(paymentRequest);
 }
@@ -945,7 +936,6 @@ function cancelNetworkPicker() {
   state.pendingNetworkPayload = null;
   state.pendingNetworkScheme = null;
   state.pendingNetworkAmountLocked = false;
-  state.pendingAmountSettle = null;
   abortPairHintFetch();
   setNetworkAmountHint('');
   setStatus(
@@ -1156,7 +1146,6 @@ function bindUi() {
       return;
     }
     const settle = readSchemeSettleTarget(networkSelect.value);
-    state.pendingAmountSettle = settle;
     setNetworkAmountLabel(settle?.currencyCode ?? '');
     void refreshNetworkAmountMinimum(settle);
   });
