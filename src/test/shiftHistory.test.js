@@ -79,6 +79,27 @@ describe('shiftHistory', () => {
     });
   });
 
+  it('keeps stored values when a patch field is undefined', () => {
+    appendShift('a', {
+      id: 's1',
+      status: 'waiting',
+      depositAddress: 'bitcoincash:qdeposit',
+      settleAmount: '0.01',
+    });
+    updateShift('a', 's1', {
+      status: 'processing',
+      depositAddress: undefined,
+      settleAmount: undefined,
+    });
+
+    expect(listShifts('a')[0]).toMatchObject({
+      id: 's1',
+      status: 'processing',
+      depositAddress: 'bitcoincash:qdeposit',
+      settleAmount: '0.01',
+    });
+  });
+
   it('removeShift drops a single entry', () => {
     appendShift('a', { id: 's1' });
     appendShift('a', { id: 's2' });

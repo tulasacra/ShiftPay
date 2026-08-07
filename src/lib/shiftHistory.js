@@ -57,8 +57,20 @@ export function appendShift(affiliateId, entry) {
   localStorage.setItem(key, JSON.stringify(next));
 }
 
+/** Object spread would copy `undefined` values over stored ones, and JSON.stringify then drops them. */
+function mergeDefined(entry, patch) {
+  const merged = { ...entry };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
 /**
  * Updates fields on an existing history entry in place (merged), if present.
+ * Patch fields set to `undefined` leave the stored value alone.
  * @param {string} affiliateId
  * @param {string} id
  * @param {object} patch
@@ -73,7 +85,7 @@ export function updateShift(affiliateId, id, patch) {
   const next = list.map((entry) => {
     if (entry && entry.id === id) {
       changed = true;
-      return { ...entry, ...patch };
+      return mergeDefined(entry, patch);
     }
     return entry;
   });

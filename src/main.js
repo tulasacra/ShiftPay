@@ -109,6 +109,7 @@ const state = {
   isBusy: false,
   orderWaitTimer: null,
   shiftPollTimer: null,
+  shiftPollAbort: null,
   shiftPollLastStatus: null,
   paymentRequest: null,
   shiftOrder: null,
@@ -471,6 +472,12 @@ function renderShiftDetails(order) {
   `;
 }
 
+function clearCurrentPayment() {
+  state.paymentRequest = null;
+  renderTargetDetails(null);
+  resetShiftState();
+}
+
 function resetShiftState() {
   window.clearTimeout(state.orderWaitTimer);
   state.orderWaitTimer = null;
@@ -482,16 +489,25 @@ function resetShiftState() {
 }
 
 function stopShiftStatusPoll() {
+  state.shiftPollAbort?.abort();
+  state.shiftPollAbort = null;
   if (state.shiftPollTimer !== null) {
     window.clearTimeout(state.shiftPollTimer);
     state.shiftPollTimer = null;
   }
 }
 
+/** Aborting is what stops a poll: clearing the timer alone leaves an in-flight tick to reschedule. */
 function startShiftStatusPoll(shiftId) {
   stopShiftStatusPoll();
 
+  const controller = new AbortController();
+  state.shiftPollAbort = controller;
+
   const schedule = (delay) => {
+    if (controller.signal.aborted) {
+      return;
+    }
     state.shiftPollTimer = window.setTimeout(tick, delay);
   };
 
@@ -499,7 +515,10 @@ function startShiftStatusPoll(shiftId) {
     state.shiftPollTimer = null;
 
     try {
-      const shift = await fetchShiftStatus(shiftId);
+      const shift = await fetchShiftStatus(shiftId, { signal: controller.signal });
+      if (controller.signal.aborted) {
+        return;
+      }
       const prev = state.shiftPollLastStatus;
       state.shiftPollLastStatus = shift.status;
       state.shiftOrder = shift;
@@ -831,6 +850,8 @@ async function refreshNetworkAmountMinimum(settle) {
 function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   const hasPrefix = hasSchemePrefix(scannedText);
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
+  // Drop any earlier invoice so canceling this dialog cannot leave its wallet link armed.
+  clearCurrentPayment();
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkScheme = knownNetwork?.scheme ?? null;
   state.pendingNetworkAmountLocked = amountLocked;
@@ -941,6 +962,7 @@ async function handleDecodedText(decodedText) {
   }
 
   state.isBusy = true;
+  clearCurrentPayment();
 
   try {
     await stopScanner();
@@ -963,9 +985,7 @@ async function handleDecodedText(decodedText) {
     const paymentRequest = parsePaymentCode(decodedText);
     await openRequestFromPayment(paymentRequest);
   } catch (error) {
-    state.paymentRequest = null;
-    renderTargetDetails(null);
-    resetShiftState();
+    clearCurrentPayment();
     setStatus(error.message, 'error');
     await startScanner({ preserveStatusOnReady: true });
   } finally {
@@ -979,6 +999,9 @@ async function handleImageInput(event) {
   if (!file) {
     return;
   }
+
+  // A new file is a new scan attempt; don't leave the previous wallet armed under a failure.
+  clearCurrentPayment();
 
   try {
     setStatus('Scanning the selected image...', 'info');
@@ -1011,6 +1034,8 @@ async function submitPasteDialog(event) {
     pasteUriInput?.focus();
     return;
   }
+  // Resuming here would race the stop() in handleDecodedText and leave the camera over the results.
+  state.shouldResumeScannerAfterModal = false;
   pasteDialog?.close();
   setStatus('Reading payment code...', 'info');
   await handleDecodedText(text);
@@ -1061,9 +1086,7 @@ function bindUi() {
   bindModalWithScannerPause(pasteDialog);
 
   rescanButton.addEventListener('click', async () => {
-    state.paymentRequest = null;
-    renderTargetDetails(null);
-    resetShiftState();
+    clearCurrentPayment();
     setStatus('Ready to scan again.', 'info');
     await startScanner();
   });
