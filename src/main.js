@@ -844,6 +844,10 @@ async function refreshNetworkAmountMinimum(settle) {
 function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   const hasPrefix = hasSchemePrefix(scannedText);
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
+  // Drop any earlier invoice so canceling this dialog cannot leave its wallet link armed.
+  state.paymentRequest = null;
+  renderTargetDetails(null);
+  resetShiftState();
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkScheme = knownNetwork?.scheme ?? null;
   state.pendingNetworkAmountLocked = amountLocked;
