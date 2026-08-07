@@ -92,7 +92,7 @@ const cancelPasteButton = document.getElementById('cancelPasteButton');
 const SHIFT_POLL_MS = 4000;
 const PASTE_DIALOG_LEDE_DEFAULT = 'Paste a payment URI or address, then continue.';
 const PASTE_DIALOG_LEDE_DENIED =
-  'Clipboard access is blocked for this site. Paste with Ctrl+V or Cmd+V below, or re-enable clipboard in your browser site settings.';
+  'Clipboard access is blocked for this site. Paste below, or re-enable clipboard in your browser site settings.';
 
 const SECRET_MASK = '*'.repeat(24);
 const CAMERA_READY_STATUS = 'Camera ready. Scan a supported payment QR.';
