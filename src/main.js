@@ -472,6 +472,12 @@ function renderShiftDetails(order) {
   `;
 }
 
+function clearCurrentPayment() {
+  state.paymentRequest = null;
+  renderTargetDetails(null);
+  resetShiftState();
+}
+
 function resetShiftState() {
   window.clearTimeout(state.orderWaitTimer);
   state.orderWaitTimer = null;
@@ -845,9 +851,7 @@ function openNetworkPicker(scannedText, knownNetwork = null, choices = []) {
   const hasPrefix = hasSchemePrefix(scannedText);
   const amountLocked = !knownNetwork && hasPayloadAmount(scannedText);
   // Drop any earlier invoice so canceling this dialog cannot leave its wallet link armed.
-  state.paymentRequest = null;
-  renderTargetDetails(null);
-  resetShiftState();
+  clearCurrentPayment();
   state.pendingNetworkPayload = scannedText;
   state.pendingNetworkScheme = knownNetwork?.scheme ?? null;
   state.pendingNetworkAmountLocked = amountLocked;
@@ -958,6 +962,7 @@ async function handleDecodedText(decodedText) {
   }
 
   state.isBusy = true;
+  clearCurrentPayment();
 
   try {
     await stopScanner();
@@ -980,9 +985,7 @@ async function handleDecodedText(decodedText) {
     const paymentRequest = parsePaymentCode(decodedText);
     await openRequestFromPayment(paymentRequest);
   } catch (error) {
-    state.paymentRequest = null;
-    renderTargetDetails(null);
-    resetShiftState();
+    clearCurrentPayment();
     setStatus(error.message, 'error');
     await startScanner({ preserveStatusOnReady: true });
   } finally {
@@ -996,6 +999,9 @@ async function handleImageInput(event) {
   if (!file) {
     return;
   }
+
+  // A new file is a new scan attempt; don't leave the previous wallet armed under a failure.
+  clearCurrentPayment();
 
   try {
     setStatus('Scanning the selected image...', 'info');
@@ -1080,9 +1086,7 @@ function bindUi() {
   bindModalWithScannerPause(pasteDialog);
 
   rescanButton.addEventListener('click', async () => {
-    state.paymentRequest = null;
-    renderTargetDetails(null);
-    resetShiftState();
+    clearCurrentPayment();
     setStatus('Ready to scan again.', 'info');
     await startScanner();
   });
